@@ -13,16 +13,21 @@ public class JdbcController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @GetMapping("/userList")
-    public List<Map<String, Object>> userList() {
-        String sql = "select * from user";
-        List<Map<String, Object>> list_maps = jdbcTemplate.queryForList(sql);
-        return  list_maps;
+    @GetMapping("/dbtest")
+    public String dbtest() {
+        String username = "ro";
+        String password = "1234";
+        String sql = "select password from user_info where username = \"" + username + "\"";
+        String result = (String)jdbcTemplate.queryForObject(sql, String.class);
+        if (password.equals(result))
+            return "OK";
+        else
+            return "Oops!";
     }
 
     @GetMapping("/addUser")
     public String addUser() {
-        String sql = "insert into user(id, user_name, password) values(12, 'cent', '1234')";
+        String sql = "insert into user_info(id, username, password) values(12, 'cent', '1234')";
         jdbcTemplate.update(sql);
         return "ok";
     }

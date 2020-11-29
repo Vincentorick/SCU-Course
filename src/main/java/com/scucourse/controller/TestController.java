@@ -9,10 +9,10 @@ import java.util.Arrays;
 
 @Controller
 public class TestController {
-    @RequestMapping("/index")
-    public String test(Model model) {
-        model.addAttribute("msg", "<h1>hello, springboot</h1>");
-        model.addAttribute("users", Arrays.asList("vincent", "vince", "illidan"));
-        return "test";
-    }
+//    @RequestMapping("/index")
+//    public String test(Model model) {
+//        model.addAttribute("msg", "<h1>hello, springboot</h1>");
+//        model.addAttribute("users", Arrays.asList("vincent", "vince", "illidan"));
+//        return "test";
+//    }
 }
