@@ -13,6 +13,6 @@ public class TestController {
 //    public String test(Model model) {
 //        model.addAttribute("msg", "<h1>hello, springboot</h1>");
 //        model.addAttribute("users", Arrays.asList("vincent", "vince", "illidan"));
-//        return "test";
+//        return "test";            
 //    }
 }
