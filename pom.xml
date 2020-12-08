@@ -10,8 +10,7 @@
     </parent>
     <groupId>com.scucourse</groupId>
     <artifactId>scucourse</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <version>1.0.0</version>
     <name>scucourse</name>
     <description>Project for SCU Course</description>
 
@@ -25,11 +24,6 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -61,6 +55,7 @@
     </dependencies>
 
     <build>
+        <finalName>scucourse</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

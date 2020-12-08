@@ -26,7 +26,7 @@ public class FileUploadController {
 		this.storageService = storageService;
 	}
 
-	@GetMapping("/tables")
+	@GetMapping({"/tables","/tables.html"})
 	public String listUploadedFiles(Model model) throws IOException {
 
 		model.addAttribute("files", storageService.loadAll().map(
@@ -52,7 +52,7 @@ public class FileUploadController {
 
 		storageService.store(file);
 		redirectAttributes.addFlashAttribute("message",
-				"You successfully uploaded " + file.getOriginalFilename() + "!");
+				file.getOriginalFilename() + " 上传成功!");
 
 		return "redirect:/tables";
 	}
