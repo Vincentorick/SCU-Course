@@ -2,10 +2,12 @@ package com.scucourse.controller;
 
 import com.scucourse.storage.StorageFileNotFoundException;
 import com.scucourse.storage.StorageService;
+import com.scucourse.util.Format;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -15,12 +17,19 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
 public class FilesController {
 
 	private final StorageService storageService;
+
+	@Autowired
+	JdbcTemplate jdbcTemplate;
 
 	@Autowired
 	public FilesController(StorageService storageService) {
@@ -30,10 +39,22 @@ public class FilesController {
 	@GetMapping({"/files","/files.html"})
 	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
 		model.addAttribute("username", session.getAttribute("loginUser"));
-		model.addAttribute("files", storageService.loadAll().map(
-				path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
-						"serveFile", path.getFileName().toString()).build().toUri().toString())
-				.collect(Collectors.toList()));
+//		model.addAttribute("files", storageService.loadAll().map(
+//				path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
+//						"serveFile", path.getFileName().toString()).build().toUri().toString())
+//				.collect(Collectors.toList()));
+
+		String sql = "SELECT name,size,creator,date_created FROM file_info";
+		List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
+
+		List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
+				"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
+		for (int i = 0; i < files.size(); ++i) {
+			files.get(i).replace("size", Format.formetFileSize((long)files.get(i).get("size")));
+			files.get(i).put("url", fileUrls.get(i));
+		}
+		System.out.println(files);
+		model.addAttribute("files", files);
 
 		return "files";
 	}
@@ -48,8 +69,13 @@ public class FilesController {
 	}
 
 	@PostMapping("/fileUpload")
-	public String handleFileUpload(@RequestParam("file") MultipartFile file,
+	public String handleFileUpload(@RequestParam("file") MultipartFile file, HttpSession session,
 			RedirectAttributes redirectAttributes) {
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String sql = String.format("INSERT INTO file_info(name,size,creator,date_created) VALUES(\"%s\",\"%s\",\"%s\",\"%s\")",
+				file.getOriginalFilename(), file.getSize(), session.getAttribute("loginUser"), sdf.format(date));
+		jdbcTemplate.update(sql);
 
 		storageService.store(file);
 		redirectAttributes.addFlashAttribute("message",
@@ -62,5 +88,4 @@ public class FilesController {
 	public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
 		return ResponseEntity.notFound().build();
 	}
-
 }

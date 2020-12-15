@@ -48,6 +48,9 @@ public class FileSystemStorageService implements StorageService {
 		catch (IOException e) {
 			throw new StorageException("Failed to store file.", e);
 		}
+		catch (StorageException e) {
+			// Handle the exception
+		}
 	}
 
 	@Override

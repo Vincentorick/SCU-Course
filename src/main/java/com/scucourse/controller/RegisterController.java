@@ -27,6 +27,6 @@ public class RegisterController {
             jdbcTemplate.update(sql);
         }
 
-        return "login";
+        return "redirect:/login";
     }
 }

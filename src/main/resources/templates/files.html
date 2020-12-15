@@ -241,17 +241,29 @@
                                     <thead>
                                         <tr>
                                             <th>文件名</th>
+                                            <th>大小</th>
+                                            <th>上传者</th>
+                                            <th>上传时间</th>
+
                                         </tr>
                                     </thead>
                                     <tfoot>
                                         <tr>
                                             <th>文件名</th>
+                                            <th>大小</th>
+                                            <th>上传者</th>
+                                            <th>上传时间</th>
                                         </tr>
                                     </tfoot>
                                     <tbody>
                                         <tr th:each="file : ${files}">
 <!--                                            <th><a th:href="${file}" th:text="${file}" /></th>-->
-                                            <th><a th:href="${file}" th:text="${#strings.substringAfter(file, 'files/')}" /></th>
+<!--                                            <td><a th:href="${file}" th:text="${#strings.substringAfter(file, 'files/')}" /></td>-->
+<!--                                            <td><a th:href="${file}" th:text="${file}" /></td>-->
+                                            <td><a th:href="${file.url}" th:text="${file.name}" /></td>
+                                            <td th:text="${file.size}"></td>
+                                            <td th:text="${file.creator}"></td>
+                                            <td th:text="${file.date_created}"></td>
                                         </tr>
 <!--                                        <tr>-->
 <!--                                            <td>Tiger Nixon</td>-->
