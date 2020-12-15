@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
+import java.util.Map;
 
 @Controller
-public class LoginController {
+public class UserController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
@@ -23,10 +24,13 @@ public class LoginController {
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
         try {
-            String sql = String.format("select password from user_info where username = \"%s\"", username);
-            String result = (String)jdbcTemplate.queryForObject(sql, String.class);
-            if (password.equals(result)) {
-                session.setAttribute("loginUser", username);
+            String sql = String.format("SELECT id,password FROM user_info WHERE username = \"%s\"", username);
+            Map<String, Object> result = jdbcTemplate.queryForMap(sql);
+
+            if (password.equals(result.get("password"))) {
+                session.setAttribute("currentUser", username);
+                session.setAttribute("currentUserId", result.get("id")); //数据类型为long
+
                 if (remember != null) {
                     session.setMaxInactiveInterval(86400);
                 }
@@ -46,6 +50,23 @@ public class LoginController {
     @GetMapping("/userLogout")
     public String userLogout(HttpSession session) {
         session.invalidate();
+        return "redirect:/login";
+    }
+
+    @GetMapping("/userRegister")
+    public String userRegister(@RequestParam("username") String username,
+                               @RequestParam("email") String email,
+                               @RequestParam("password") String password,
+                               @RequestParam("repeatPassword") String repeatPassword,
+                               Model model) {
+
+        if (!password.equals(repeatPassword)) {
+
+        }
+        else {
+            String sql = String.format("INSERT INTO user_info(username, password, email) VALUES(\"%s\", \"%s\", \"%s\")", username, password, email);
+            jdbcTemplate.update(sql);
+        }
         return "redirect:/login";
     }
 }

@@ -59,20 +59,20 @@
 <!--            </div>-->
 
 <!--            &lt;!&ndash; Nav Item - Pages Collapse Menu &ndash;&gt;-->
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
-                    aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-cog"></i>
-                    <span>Components</span>
-                </a>
-                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <h6 class="collapse-header">Custom Components:</h6>
-                        <a class="collapse-item" href="buttons.html">Buttons</a>
-                        <a class="collapse-item" href="cards.html">Cards</a>
-                    </div>
-                </div>
-            </li>
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"-->
+<!--                    aria-expanded="true" aria-controls="collapseTwo">-->
+<!--                    <i class="fas fa-fw fa-cog"></i>-->
+<!--                    <span>Components</span>-->
+<!--                </a>-->
+<!--                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">-->
+<!--                    <div class="bg-white py-2 collapse-inner rounded">-->
+<!--                        <h6 class="collapse-header">Custom Components:</h6>-->
+<!--                        <a class="collapse-item" href="buttons.html">Buttons</a>-->
+<!--                        <a class="collapse-item" href="cards.html">Cards</a>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </li>-->
 
 <!--            &lt;!&ndash; Nav Item - Utilities Collapse Menu &ndash;&gt;-->
 <!--            <li class="nav-item">-->
@@ -212,15 +212,15 @@
                         <h1 class="h3 mb-0 text-gray-800">概况</h1>
                     </div>
 
+                    <!-- Quick Access -->
                     <div class="row">
-
                         <div class="col-xl-3 col-md-6 mb-4">
                             <div class="card border-left-primary shadow h-100 py-2">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
                                             <div class="font-weight-bold text-primary text-uppercase mb-1">我创建的课程</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$40,000</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${userInfo.course_created}"></div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -235,9 +235,8 @@
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
-                                            <div class="font-weight-bold text-success text-uppercase mb-1">
-                                                我参与的课程</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$215,000</div>
+                                            <div class="font-weight-bold text-success text-uppercase mb-1">我加入的课程</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${userInfo.course_joined}"></div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
@@ -253,7 +252,7 @@
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
                                             <div class="font-weight-bold text-info text-uppercase mb-1">提醒事项</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$215,000</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">0</div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
@@ -269,7 +268,7 @@
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
                                             <div class="font-weight-bold text-warning text-uppercase mb-1">提醒事项</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">18</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">0</div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-comments fa-2x text-gray-300"></i>
@@ -279,6 +278,25 @@
                             </div>
                         </div>
                     </div>
+                    <!-- End of Quick Access -->
+
+<!--                    <div class="row">-->
+
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">创建 / 加入课程</h6>
+                        </div>
+                        <div class="card-body">
+                            <form th:action="@{/courseAction}">
+                                <input name="courseName" type="text" class="bg-light border-primary" placeholder="课程名称">
+                                &nbsp;&nbsp;
+                                <button type="submit" name="action" value="create" class="btn btn-primary">创建</button>
+                                &nbsp;&nbsp;
+                                <button type="submit" name="action" value="join" class="btn btn-success">加入</button>
+                            </form>
+                        </div>
+                    </div>
+<!--                    </div>-->
 
                     <!-- 课程列表 -->
                     <div class="card shadow mb-4">
@@ -291,17 +309,19 @@
                                     <thead>
                                     <tr>
                                         <th>课程名</th>
-                                        <th>人数</th>
+                                        <th>学生人数</th>
                                         <th>创建者</th>
                                         <th>创建时间</th>
+                                        <th>操作</th>
                                     </tr>
                                     </thead>
                                     <tfoot>
                                     <tr>
                                         <th>课程名</th>
-                                        <th>人数</th>
+                                        <th>学生人数</th>
                                         <th>创建者</th>
                                         <th>创建时间</th>
+                                        <th>操作</th>
                                     </tr>
                                     </tfoot>
                                     <tbody>
@@ -310,6 +330,10 @@
                                         <td th:text="${course.num_students}"></td>
                                         <td th:text="${course.creator}"></td>
                                         <td th:text="${course.date_created}"></td>
+                                        <td>
+                                            <button class="btn-primary" onclick="">进入</button>
+                                            <button class="btn-danger">删除</button>
+                                        </td>
                                     </tr>
                                     </tbody>
                                 </table>

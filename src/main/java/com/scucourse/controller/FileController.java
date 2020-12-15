@@ -24,20 +24,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
-public class FilesController {
+public class FileController {
 	private final StorageService storageService;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
 	@Autowired
-	public FilesController(StorageService storageService) {
+	public FileController(StorageService storageService) {
 		this.storageService = storageService;
 	}
 
 	@GetMapping({"/files","/files.html"})
 	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
-		model.addAttribute("username", session.getAttribute("loginUser"));
+		model.addAttribute("username", session.getAttribute("currentUser"));
 //		model.addAttribute("files", storageService.loadAll().map(
 //				path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
 //						"serveFile", path.getFileName().toString()).build().toUri().toString())
@@ -46,7 +46,7 @@ public class FilesController {
 		String sql = "SELECT file_name,size,creator,date_created FROM file_info";
 		List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
 
-		List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
+		List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,
 				"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
 
 		// 修改文件大小格式并添加url
@@ -74,7 +74,7 @@ public class FilesController {
 		Date date = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String sql = String.format("INSERT INTO file_info(name,size,creator,date_created) VALUES(\"%s\",\"%s\",\"%s\",\"%s\")",
-				file.getOriginalFilename(), file.getSize(), session.getAttribute("loginUser"), sdf.format(date));
+				file.getOriginalFilename(), file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
 		jdbcTemplate.update(sql);
 
 		storageService.store(file);
