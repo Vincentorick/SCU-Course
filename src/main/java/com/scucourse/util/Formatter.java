@@ -2,7 +2,7 @@ package com.scucourse.util;
 
 import java.text.DecimalFormat;
 
-public class Format {
+public class Formatter {
     public static String formetFileSize(long fileSize) {
         DecimalFormat df = new DecimalFormat("#.00");
         String fileSizeString = "";

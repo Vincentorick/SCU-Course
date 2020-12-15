@@ -2,7 +2,7 @@ package com.scucourse.controller;
 
 import com.scucourse.storage.StorageFileNotFoundException;
 import com.scucourse.storage.StorageService;
-import com.scucourse.util.Format;
+import com.scucourse.util.Formatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 @Controller
 public class FilesController {
-
 	private final StorageService storageService;
 
 	@Autowired
@@ -44,16 +43,17 @@ public class FilesController {
 //						"serveFile", path.getFileName().toString()).build().toUri().toString())
 //				.collect(Collectors.toList()));
 
-		String sql = "SELECT name,size,creator,date_created FROM file_info";
+		String sql = "SELECT file_name,size,creator,date_created FROM file_info";
 		List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
 
 		List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
 				"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
+
+		// 修改文件大小格式并添加url
 		for (int i = 0; i < files.size(); ++i) {
-			files.get(i).replace("size", Format.formetFileSize((long)files.get(i).get("size")));
+			files.get(i).replace("size", Formatter.formetFileSize((long)files.get(i).get("size")));
 			files.get(i).put("url", fileUrls.get(i));
 		}
-		System.out.println(files);
 		model.addAttribute("files", files);
 
 		return "files";
@@ -78,8 +78,7 @@ public class FilesController {
 		jdbcTemplate.update(sql);
 
 		storageService.store(file);
-		redirectAttributes.addFlashAttribute("message",
-				file.getOriginalFilename() + " 上传成功!");
+		redirectAttributes.addFlashAttribute("message", file.getOriginalFilename() + " 上传成功!");
 
 		return "redirect:/files";
 	}

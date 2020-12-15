@@ -23,7 +23,7 @@ public class RegisterController {
 
         }
         else {
-            String sql = String.format("insert into user_info(username, email, password) values(\"%s\", \"%s\", \"%s\")", username, email, password);
+            String sql = String.format("INSERT INTO user_info(username, password, email) VALUES(\"%s\", \"%s\", \"%s\")", username, password, email);
             jdbcTemplate.update(sql);
         }
 
