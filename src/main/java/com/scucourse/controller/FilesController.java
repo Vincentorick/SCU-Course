@@ -13,28 +13,29 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
 @Controller
-public class FileUploadController {
+public class FilesController {
 
 	private final StorageService storageService;
 
 	@Autowired
-	public FileUploadController(StorageService storageService) {
+	public FilesController(StorageService storageService) {
 		this.storageService = storageService;
 	}
 
-	@GetMapping({"/tables","/tables.html"})
-	public String listUploadedFiles(Model model) throws IOException {
-
+	@GetMapping({"/files","/files.html"})
+	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
+		model.addAttribute("username", session.getAttribute("loginUser"));
 		model.addAttribute("files", storageService.loadAll().map(
-				path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
+				path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
 						"serveFile", path.getFileName().toString()).build().toUri().toString())
 				.collect(Collectors.toList()));
 
-		return "tables";
+		return "files";
 	}
 
 	@GetMapping("/files/{filename:.+}")
@@ -54,7 +55,7 @@ public class FileUploadController {
 		redirectAttributes.addFlashAttribute("message",
 				file.getOriginalFilename() + " 上传成功!");
 
-		return "redirect:/tables";
+		return "redirect:/files";
 	}
 
 	@ExceptionHandler(StorageFileNotFoundException.class)
