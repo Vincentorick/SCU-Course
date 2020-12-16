@@ -38,10 +38,9 @@ public class FileController {
 	@GetMapping({"/files","/files.html"})
 	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
 		model.addAttribute("username", session.getAttribute("currentUser"));
-//		model.addAttribute("files", storageService.loadAll().map(
-//				path -> MvcUriComponentsBuilder.fromMethodName(FilesController.class,
-//						"serveFile", path.getFileName().toString()).build().toUri().toString())
-//				.collect(Collectors.toList()));
+		String currentCourse = (String)session.getAttribute("currentCourse");
+		model.addAttribute("currentCourse", currentCourse);
+
 
 		String sql = "SELECT file_name,size,creator,date_created FROM file_info";
 		List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
@@ -49,7 +48,7 @@ public class FileController {
 		List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,
 				"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
 
-		// 修改文件大小格式并添加url
+		// 修改文件大小格式，并添加url
 		for (int i = 0; i < files.size(); ++i) {
 			files.get(i).replace("size", Formatter.formetFileSize((long)files.get(i).get("size")));
 			files.get(i).put("url", fileUrls.get(i));
