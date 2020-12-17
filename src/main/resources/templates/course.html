@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>SCU Course - 概览</title>
+    <title th:text="|${currentCourse} - 课程主页|"></title>
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -50,6 +50,11 @@
                 <span>概览</span></a>
         </li>
 
+        <!-- Divider -->
+        <hr class="sidebar-divider d-none d-md-block">
+
+        <div class="sidebar-heading" th:text="${currentCourse}"></div>
+
         <li class="nav-item active">
             <a class="nav-link" href="files.html">
                 <i class="fas fa-fw fa-table"></i>
@@ -66,7 +71,6 @@
                 <span>文件管理</span></a>
         </li>
 
-
         <!-- Divider -->
         <hr class="sidebar-divider d-none d-md-block">
 
@@ -74,13 +78,6 @@
         <div class="text-center d-none d-md-inline">
             <button class="rounded-circle border-0" id="sidebarToggle"></button>
         </div>
-
-        <!-- Sidebar Message -->
-        <!-- <div class="sidebar-card">
-            <img class="sidebar-card-illustration mb-2" th:src="@{images/undraw_rocket.svg}" alt="">
-            <p class="text-center mb-2"><strong>SB Admin Pro</strong> is packed with premium features, components, and more!</p>
-            <a class="btn btn-success btn-sm" href="https://startbootstrap.com/theme/sb-admin-pro">Upgrade to Pro!</a>
-        </div> -->
 
     </ul>
     <!-- End of Sidebar -->
@@ -99,6 +96,7 @@
                     <i class="fa fa-bars"></i>
                 </button>
 
+                <!-- 显示课程名称 -->
                 <span class="h4 text-xl-left font-weight-bold text-gray-800" th:text="${currentCourse}"></span>
 
                 <!-- Topbar Navbar -->
@@ -110,7 +108,7 @@
                     <li class="nav-item dropdown no-arrow">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="mr-2 d-none d-lg-inline text-gray-600 small" th:text="${username}"></span>
+                            <span class="mr-2 d-none d-lg-inline text-gray-600 small" th:text="${currentUser}"></span>
                             <img class="img-profile rounded-circle" th:src="@{images/undraw_profile.svg}">
                         </a>
                         <!-- Dropdown - User Information -->
@@ -140,7 +138,94 @@
 
                 <!-- Page Heading -->
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h1 class="h3 mb-0 text-gray-800">概览</h1>
+                    <h1 class="h3 mb-0 text-gray-800">课程信息</h1>
+                </div>
+
+                <div class="card shadow mb-4">
+                    <form th:action="@{/courseUpdate}">
+                        <div class="card-header">
+                            <nav class="navbar">
+                                <span class="navbar-brand font-weight-bold text-primary">概览</span>
+                                <ul class="navbar-nav ml-auto">
+                                    <li class="nav-item">
+                                        <button th:if="${memberType} eq 'admin'" name="action" value="save" type="submit" class="btn btn-primary">保存修改</button>
+                                        <button th:if="${memberType} eq 'admin'" name="action" value="delete" type="submit" class="btn btn-danger">删除课程</button>
+                                        <button th:if="${memberType} eq 'normal'" name="action" value="quit" type="submit" class="btn btn-danger">退出课程</button>
+                                    </li>
+                                </ul>
+                            </nav>
+
+                        </div>
+
+                        <div class="card-body row no-gutters ">
+                            <div class="row">
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">课程ID</span>
+                                    <input readonly type="text" th:value="${courseInfo.id}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">课程名称</span>
+                                    <input th:if="${memberType} eq 'admin'" name="courseName" type="text" th:value="${courseInfo.course_name}">
+                                    <input th:if="${memberType} eq 'normal'" readonly name="courseName" type="text" th:value="${courseInfo.course_name}">
+                                </div>
+                                <div  class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">学生人数</span>
+                                    <input readonly type="text" th:value="${courseInfo.num_students}">
+                                </div>
+                                <div  class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">人数上限（0表示无限制）</span>
+                                    <input th:if="${memberType} eq 'admin'" name="maxNumStu" type="text" th:value="${courseInfo.max_num_students}">
+                                    <input th:if="${memberType} eq 'normal'" readonly name="maxNumStu" type="text" th:value="${courseInfo.max_num_students}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">创建者</span>
+                                    <input readonly type="text" th:value="${courseInfo.creator}">
+                                </div>
+                                <div  class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">创建时间</span>
+                                    <input readonly type="text" th:value="${courseInfo.date_created}">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">学生列表</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                <thead>
+                                <tr>
+                                    <th>学生姓名</th>
+                                    <th>成绩</th>
+                                    <th>操作</th>
+                                </tr>
+                                </thead>
+                                <tfoot>
+                                <tr>
+                                    <th>学生姓名</th>
+                                    <th>成绩</th>
+                                    <th>操作</th>
+                                </tr>
+                                </tfoot>
+                                <tbody>
+                                <tr th:each="student : ${students}">
+                                    <form th:action="@{/removeStudent}">
+                                        <td th:text="${student.name}"></td>
+                                        <td th:text="${student.grade}"></td>
+                                        <td>
+                                            <input hidden name="studentName" th:value="${student.name}">
+                                            <button th:if="${memberType} eq 'admin'" type="submit" class="btn btn-sm btn-primary">移除</button>
+                                        </td>
+                                    </form>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- /.container-fluid -->

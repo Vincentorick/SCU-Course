@@ -21,21 +21,21 @@ public class UserController {
         if (session.getAttribute("currentUser") != null) {
             return "redirect:/index";
         } else
-            return "/login";
+            return "login";
     }
     @GetMapping({"/register","/register.html"})
     public String register(HttpSession session) {
         if (session.getAttribute("currentUser") != null) {
             return "redirect:/index";
         } else
-            return "/register";
+            return "register";
     }
     @GetMapping({"/forgot-password","/forgot-password.html"})
     public String forgotPassword(HttpSession session) {
         if (session.getAttribute("currentUser") != null) {
             return "redirect:/index";
         } else
-            return "/forgot-password";
+            return "forgot-password";
     }
 
     @GetMapping("/userLogin")
@@ -46,12 +46,13 @@ public class UserController {
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
         try {
-            String sql = String.format("SELECT id,password FROM user_info WHERE username = \"%s\"", username);
+            String sql = String.format("SELECT id,password,user_type FROM user_info WHERE username = \"%s\"", username);
             Map<String, Object> result = jdbcTemplate.queryForMap(sql);
 
             if (password.equals(result.get("password"))) {
                 session.setAttribute("currentUser", username);
                 session.setAttribute("currentUserId", result.get("id")); //数据类型为long
+                session.setAttribute("currentUserType", result.get("user_type"));
 
                 if (remember != null) {
                     session.setMaxInactiveInterval(86400);
