@@ -86,6 +86,7 @@ public class CourseController {
             case "save":
                 sql = String.format("UPDATE course_info SET course_name = \"%s\", max_num_students = %s WHERE id = %d", courseName, maxNumStu, currentCourseId);
                 jdbcTemplate.update(sql);
+                session.setAttribute("currentCourse",courseName);
                 return "redirect:/course";
             case "delete":
                 sql = String.format("DELETE FROM course_info WHERE id = %s", currentCourseId);
@@ -135,7 +136,6 @@ public class CourseController {
 
         switch (action) {
             case "create":
-                // update table course_info
                 Date date = new Date();
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 try {
