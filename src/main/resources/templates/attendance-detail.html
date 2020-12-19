@@ -9,13 +9,13 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title th:text="|${currentCourse} - 课程主页|"></title>
+    <title th:text="|${currentCourse} - 考勤|"></title>
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link
-        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-        rel="stylesheet">
+            href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+            rel="stylesheet">
 
     <!-- Custom styles for this template-->
     <link href="css/sb-admin-2.css" rel="stylesheet">
@@ -34,7 +34,7 @@
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
             <!-- Sidebar - Brand -->
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{index.html}">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
                 <div class="sidebar-brand-icon rotate-n-15">
                     <i class="fas fa-laugh-wink"></i>
                 </div>
@@ -48,7 +48,7 @@
             <li class="nav-item">
                 <a class="nav-link" href="index.html">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
-                    <span>概览</span></a>
+                    <span>主页</span></a>
             </li>
 
             <!-- Divider -->
@@ -56,20 +56,41 @@
 
             <div class="sidebar-heading" th:text="${currentCourse}"></div>
 
+            <li class="nav-item">
+                <a class="nav-link" href="course.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>课程主页</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="bulletin.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>公告</span>
+                </a>
+            </li>
             <li class="nav-item active">
                 <a class="nav-link" href="files.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>课程主页</span></a>
+                    <span>考勤</span>
+                </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="files.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>课堂考勤</span></a>
+                    <span>投票</span>
+                </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="files.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>文件管理</span></a>
+                    <span>问卷调查</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="files.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>文件管理</span>
+                </a>
             </li>
 
             <!-- Divider -->
@@ -97,7 +118,6 @@
                         <i class="fa fa-bars"></i>
                     </button>
 
-                    <!-- 显示课程名称 -->
                     <span class="h4 text-xl-left font-weight-bold text-gray-800" th:text="${currentCourse}"></span>
 
                     <!-- Topbar Navbar -->
@@ -108,14 +128,13 @@
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"
-                                    th:text="${currentUser}"></span>
-                                <img class="img-profile rounded-circle" th:src="@{images/undraw_profile.svg}">
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600" th:text="${currentUser}"></span>
+                                <img class="img-profile rounded-circle" src="images/undraw_profile.svg">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                                aria-labelledby="userDropdown">
+                                 aria-labelledby="userDropdown">
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Profile
@@ -140,102 +159,75 @@
 
                     <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">课程信息</h1>
-                    </div>
-
-                    <div class="card shadow mb-4">
-                        <form th:action="@{/courseUpdate}">
-                            <div class="card-header">
-                                <nav class="navbar">
-                                    <span class="navbar-brand font-weight-bold text-primary">概览</span>
-                                    <ul class="navbar-nav ml-auto">
-                                        <li class="nav-item">
-                                            <button th:if="${memberType} eq 'admin'" name="action" value="save"
-                                                type="submit" class="btn btn-primary">保存修改</button>
-                                            <button th:if="${memberType} eq 'admin'" name="action" value="delete"
-                                                type="submit" class="btn btn-danger">删除课程</button>
-                                            <button th:if="${memberType} eq 'normal'" name="action" value="quit"
-                                                type="submit" class="btn btn-danger">退出课程</button>
-                                        </li>
-                                    </ul>
-                                </nav>
-                            </div>
-                            <div class="card-body row no-gutters">
-                                <div class="row">
-                                    <div class="col-xl-3 col-md-6 mb-4">
-                                        <span class="text-gray-900 mr-2">课程ID</span>
-                                        <input readonly type="text" th:value="${courseInfo.id}">
-                                    </div>
-                                    <div class="col-xl-3 col-md-6 mb-4">
-                                        <span class="text-gray-900 mr-2">课程名称</span>
-                                        <input th:if="${memberType} eq 'admin'" name="courseName" type="text"
-                                            th:value="${courseInfo.course_name}">
-                                        <input th:if="${memberType} eq 'normal'" readonly name="courseName" type="text"
-                                            th:value="${courseInfo.course_name}">
-                                    </div>
-                                    <div class="col-xl-3 col-md-6 mb-4">
-                                        <span class="text-gray-900 mr-2">学生人数</span>
-                                        <input readonly type="text" th:value="${courseInfo.num_students}">
-                                    </div>
-                                    <div class="col-xl-3 col-md-6 mb-4">
-                                        <span class="text-gray-900 mr-2">人数上限（0表示无限制）</span>
-                                        <input th:if="${memberType} eq 'admin'" name="maxNumStu" type="text"
-                                            th:value="${courseInfo.max_num_students}">
-                                        <input th:if="${memberType} eq 'normal'" readonly name="maxNumStu" type="text"
-                                            th:value="${courseInfo.max_num_students}">
-                                    </div>
-                                    <div class="col-xl-3 col-md-6 mb-4">
-                                        <span class="text-gray-900 mr-2">创建者</span>
-                                        <input readonly type="text" th:value="${courseInfo.creator}">
-                                    </div>
-                                    <div class="col-xl-3 col-md-6 mb-4">
-                                        <span class="text-gray-900 mr-2">创建时间</span>
-                                        <input readonly type="text" th:value="${courseInfo.date_created}">
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                        <h1 class="h3 mb-0 text-gray-800">签到详情</h1>
                     </div>
 
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">学生列表</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">基本信息</h6>
+                        </div>
+                        <div class="card-body row no-gutters">
+                            <div class="row">
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">签到标题</span>
+                                    <input readonly type="text" th:value="${attendanceDetail.title}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">创建者</span>
+                                    <input readonly type="text" th:value="${attendanceDetail.creator}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">开始时间</span>
+                                    <input readonly type="text" th:value="${attendanceDetail.start_time}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">结束时间</span>
+                                    <input readonly type="text" th:value="${attendanceDetail.end_time}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">学生人数</span>
+                                    <input readonly type="text" th:value="${attendanceDetail.num_total}">
+                                </div>
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <span class="text-gray-900 mr-2">已签到人数</span>
+                                    <input readonly type="text" th:value="${attendanceDetail.num_attended}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">详细信息</h6>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                                     <thead>
-                                        <tr>
-                                            <th>学生姓名</th>
-                                            <th>成绩</th>
-                                            <th>操作</th>
-                                        </tr>
+                                    <tr>
+                                        <th>学生姓名</th>
+                                        <th>签到状态</th>
+                                        <th>签到时间</th>
+                                    </tr>
                                     </thead>
                                     <tfoot>
-                                        <tr>
-                                            <th>学生姓名</th>
-                                            <th>成绩</th>
-                                            <th>操作</th>
-                                        </tr>
+                                    <tr>
+                                        <th>学生姓名</th>
+                                        <th>签到状态</th>
+                                        <th>签到时间</th>
+                                    </tr>
                                     </tfoot>
                                     <tbody>
-                                        <tr th:each="student : ${students}">
-                                            <form action="removeStudent">
-                                                <td th:text="${student.name}"></td>
-                                                <td th:text="${student.grade}"></td>
-                                                <td>
-                                                    <input hidden name="studentName" th:value="${student.name}">
-                                                    <button th:if="${memberType} eq 'admin'" type="submit"
-                                                        class="btn btn-sm btn-primary">移除</button>
-                                                </td>
-                                            </form>
-                                        </tr>
+                                    <tr th:each="student : ${studentList}">
+                                        <td th:text="${student.username}"></td>
+                                        <td th:text="${student.attended}"></td>
+                                        <td th:text="${student.time}"></td>
+                                    </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-
                 </div>
                 <!-- /.container-fluid -->
 
@@ -265,7 +257,7 @@
 
     <!-- Logout Modal-->
     <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
+         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -277,7 +269,7 @@
                 <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" th:href="@{userLogout}">Logout</a>
+                    <a class="btn btn-primary" href="/userLogout">Logout</a>
                 </div>
             </div>
         </div>

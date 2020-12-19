@@ -24,14 +24,14 @@ public class BulletinController {
 
             model.addAttribute("currentCourse", currentCourse);
 
-            String sql = String.format("SELECT * FROM bulletin WHERE course_id = %d", currentCourseId);
+            String sql = String.format("SELECT * FROM bulletin_info WHERE course_id = %d", currentCourseId);
             List<Map<String, Object>> bulletins = jdbcTemplate.queryForList(sql);
             Collections.reverse(bulletins);
 
             model.addAttribute("bulletins", bulletins);
             return "bulletin";
         }
-        catch (Exception e) {
+        catch (NullPointerException e) {
             return "redirect:/blank";
         }
     }
@@ -45,7 +45,7 @@ public class BulletinController {
 
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String sql = String.format("INSERT INTO bulletin(course_id,title,creator,date_created,content) VALUES(%d, \"%s\", \"%s\", \"%s\", \"%s\")",
+        String sql = String.format("INSERT INTO bulletin_info(course_id,title,creator,date_created,content) VALUES(%d, \"%s\", \"%s\", \"%s\", \"%s\")",
                 currentCourseId, title, currentUser, sdf.format(date), content);
         jdbcTemplate.update(sql);
 

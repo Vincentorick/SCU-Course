@@ -52,6 +52,8 @@ public class FileController {
 		for (int i = 0; i < files.size(); ++i) {
 			files.get(i).replace("size", Formatter.formetFileSize((long)files.get(i).get("size")));
 			files.get(i).put("url", fileUrls.get(i));
+			files.get(i).replace("date_created", files.get(i).get("date_created").toString().substring(0, 16));
+
 		}
 		model.addAttribute("files", files);
 
