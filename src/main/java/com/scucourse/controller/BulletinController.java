@@ -16,7 +16,7 @@ public class BulletinController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @GetMapping({"/bulletin", "/bulletin.html"})
+    @GetMapping({"bulletin", "bulletin.html"})
     public String bulletin(Model model, HttpSession session) {
         try {
             String currentCourse = (String)session.getAttribute("currentCourse");
@@ -32,7 +32,7 @@ public class BulletinController {
             return "bulletin";
         }
         catch (NullPointerException e) {
-            return "redirect:/blank";
+            return "redirect:blank";
         }
     }
 
@@ -49,7 +49,7 @@ public class BulletinController {
                 currentCourseId, title, currentUser, sdf.format(date), content);
         jdbcTemplate.update(sql);
 
-        return "redirect:/bulletin";
+        return "redirect:bulletin";
     }
 
 

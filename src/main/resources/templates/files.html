@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>SCU Course - 文件管理</title>
+    <title th:text="|${currentCourse} - 文件|"></title>
 
     <!-- Custom fonts for this template -->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -109,10 +109,6 @@
                                     <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Settings
                                 </a>
-<!--                                <a class="dropdown-item" href="#">-->
-<!--                                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>-->
-<!--                                    Activity Log-->
-<!--                                </a>-->
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
@@ -128,19 +124,25 @@
 
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
-                    <h1 class="h3 mb-2 text-gray-800">文件管理</h1>
 
-                    <div th:if="${message}">
-                        <h2 th:text="${message}"/>
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">课程文件管理</h1>
                     </div>
 
-                    <div>
-                        <form method="POST" enctype="multipart/form-data" th:action="@{fileUpload}">
-                            <table>
-                                <tr><td></td><td><input type="file" name="file"/></td></tr>
-                                <tr><td></td><td><input type="submit" value="上传" class="btn btn-sm btn-primary shadow-sm"/></td></tr>
-                            </table>
-                        </form>
+                    <div class="card shadow mb-4">
+                        <div class="card-header">
+                            <span class="m-0 font-weight-bold text-primary">文件上传</span>
+                        </div>
+
+                        <div class="card-body">
+                            <div th:if="${message}">
+                                <h4 th:text="${message}"/>
+                            </div>
+                            <form method="POST" enctype="multipart/form-data" th:action="@{fileUpload}">
+                                <input type="file" name="file"/>
+                                <button type="submit" name="source" value="course_file" class="btn btn-sm btn-primary">上传</button>
+                            </form>
+                        </div>
                     </div>
 
                     <hr>
@@ -159,6 +161,7 @@
                                             <th>大小</th>
                                             <th>上传者</th>
                                             <th>上传时间</th>
+                                            <th>操作</th>
                                         </tr>
                                     </thead>
                                     <tfoot>
@@ -167,6 +170,7 @@
                                             <th>大小</th>
                                             <th>上传者</th>
                                             <th>上传时间</th>
+                                            <th>操作</th>
                                         </tr>
                                     </tfoot>
                                     <tbody>
@@ -175,6 +179,13 @@
                                             <td th:text="${file.size}"></td>
                                             <td th:text="${file.creator}"></td>
                                             <td th:text="${file.date_created}"></td>
+                                            <td>
+                                                <form action="fileDelete">
+                                                    <input hidden name="fileId" th:value="${file.id}">
+                                                    <input hidden name="fileName" th:value="${file.file_name}">
+                                                    <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                                                </form>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>

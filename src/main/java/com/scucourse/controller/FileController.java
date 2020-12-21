@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 @Controller
 public class FileController {
+
 	private final StorageService storageService;
 
 	@Autowired
@@ -35,32 +37,39 @@ public class FileController {
 		this.storageService = storageService;
 	}
 
-	@GetMapping({"/files","/files.html"})
+	@GetMapping({"files","files.html"})
 	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
-		model.addAttribute("username", session.getAttribute("currentUser"));
-		String currentCourse = (String)session.getAttribute("currentCourse");
-		model.addAttribute("currentCourse", currentCourse);
+		try {
+			long currentCourseId = (long)session.getAttribute("currentCourseId");
+
+			model.addAttribute("username", session.getAttribute("currentUser"));
+			String currentCourse = (String) session.getAttribute("currentCourse");
+			model.addAttribute("currentCourse", currentCourse);
+			model.addAttribute("currentCourseId", currentCourseId);
+
+			String sql = String.format("SELECT * FROM file_info WHERE course_id = %d and source = \"course_file\"", currentCourseId);
+			List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
+
+			List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,
+					"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
 
 
-		String sql = "SELECT file_name,size,creator,date_created FROM file_info";
-		List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
-
-		List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,
-				"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
-
-		// 修改文件大小格式，并添加url
-		for (int i = 0; i < files.size(); ++i) {
-			files.get(i).replace("size", Formatter.formetFileSize((long)files.get(i).get("size")));
-			files.get(i).put("url", fileUrls.get(i));
-			files.get(i).replace("date_created", files.get(i).get("date_created").toString().substring(0, 16));
-
+			int index = 0;
+			// 修改文件大小格式，并添加url
+			for (Map<String, Object> file : files) {
+				file.replace("size", Formatter.formetFileSize((long) file.get("size")));
+				file.put("url", fileUrls.get(index++));
+				file.replace("date_created", file.get("date_created").toString().substring(0, 16));
+			}
+			model.addAttribute("files", files);
 		}
-		model.addAttribute("files", files);
-
+		catch (NullPointerException e) {
+			return "redirect:blank";
+		}
 		return "files";
 	}
 
-	@GetMapping("/files/{filename:.+}")
+	@GetMapping("files/{filename:.+}")
 	@ResponseBody
 	public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
 
@@ -69,19 +78,36 @@ public class FileController {
 				"attachment; filename=\"" + file.getFilename() + "\"").body(file);
 	}
 
-	@PostMapping("/fileUpload")
-	public String handleFileUpload(@RequestParam("file") MultipartFile file, HttpSession session,
-			RedirectAttributes redirectAttributes) {
+	@PostMapping("fileUpload")
+	public String handleFileUpload(@RequestParam("file") MultipartFile file,
+								   @RequestParam("source") String source,
+								   HttpSession session,
+								   RedirectAttributes redirectAttributes) {
+
+		if (file.isEmpty()){
+			redirectAttributes.addFlashAttribute("message", "请选择文件！");
+			return "redirect:files";
+		}
+
 		Date date = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		String sql = String.format("INSERT INTO file_info(name,size,creator,date_created) VALUES(\"%s\",\"%s\",\"%s\",\"%s\")",
-				file.getOriginalFilename(), file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
+		String sql = String.format("INSERT INTO file_info(course_id,file_name,source,size,creator,date_created) VALUES(%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\")",
+				(long) session.getAttribute("currentCourseId"), file.getOriginalFilename(), source, file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
 		jdbcTemplate.update(sql);
 
 		storageService.store(file);
 		redirectAttributes.addFlashAttribute("message", file.getOriginalFilename() + " 上传成功!");
 
-		return "redirect:/files";
+		return "redirect:files";
+	}
+
+	@GetMapping("fileDelete")
+	public String fileDelete(@RequestParam("fileId") String fileId,
+							 @RequestParam("fileName") String fileName) throws IOException {
+		storageService.delete(fileName);
+		String sql = String.format("DELETE FROM file_info WHERE id = %s", fileId);
+		jdbcTemplate.update(sql);
+		return "redirect:files";
 	}
 
 	@ExceptionHandler(StorageFileNotFoundException.class)

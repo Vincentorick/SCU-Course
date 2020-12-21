@@ -70,11 +70,17 @@
             <li class="nav-item">
                 <a class="nav-link" href="attendance.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>考勤</span>
+                    <span>签到</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="files.html">
+                <a class="nav-link" href="homework.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>作业</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="vote.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>投票</span>
                 </a>
@@ -82,13 +88,7 @@
             <li class="nav-item">
                 <a class="nav-link" href="files.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>问卷调查</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="files.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>文件管理</span>
+                    <span>文件</span>
                 </a>
             </li>
 
@@ -232,11 +232,9 @@
                             <h6 class="m-0 font-weight-bold text-primary">创建 / 加入课程</h6>
                         </div>
                         <div class="card-body">
-                            <form th:action="@{/courseAction}">
-                                <input name="courseName" type="text" class="bg-light border-primary" placeholder="课程名称">
-                                &nbsp;&nbsp;
-                                <button type="submit" name="action" value="create" class="btn btn-primary">创建</button>
-                                &nbsp;&nbsp;
+                            <form th:action="@{courseAction}">
+                                <input name="courseName" type="text" class="bg-light border-primary mr-2" placeholder="课程名称">
+                                <button th:if="${currentUserType} eq 'admin' or ${currentUserType} eq 'teacher'" type="submit" name="action" value="create" class="btn btn-primary mr-2">创建</button>
                                 <button type="submit" name="action" value="join" class="btn btn-success">加入</button>
                             </form>
                         </div>
@@ -275,7 +273,7 @@
                                         <td th:text="${course.creator}"></td>
                                         <td th:text="${course.date_created}"></td>
                                         <td>
-                                            <form th:action="@{/courseAction}">
+                                            <form th:action="@{courseAction}">
                                                 <input hidden name="courseName" type="text" th:value="${course.course_name}">
                                                 <div th:switch="${course.joined}">
                                                     <button th:case="'1'" type="submit" class="btn btn-sm btn-primary" name="action" value="enter">进入课程</button>

@@ -16,29 +16,29 @@ public class UserController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @GetMapping({"/login","/login.html"})
+    @GetMapping({"login","login.html"})
     public String login(HttpSession session) {
         if (session.getAttribute("currentUser") != null) {
-            return "redirect:/index";
+            return "redirect:index";
         } else
             return "login";
     }
-    @GetMapping({"/register","/register.html"})
+    @GetMapping({"register","register.html"})
     public String register(HttpSession session) {
         if (session.getAttribute("currentUser") != null) {
-            return "redirect:/index";
+            return "redirect:index";
         } else
             return "register";
     }
-    @GetMapping({"/forgot-password","/forgot-password.html"})
+    @GetMapping({"forgot-password","forgot-password.html"})
     public String forgotPassword(HttpSession session) {
         if (session.getAttribute("currentUser") != null) {
-            return "redirect:/index";
+            return "redirect:index";
         } else
             return "forgot-password";
     }
 
-    @GetMapping("/userLogin")
+    @GetMapping("userLogin")
     public String userLogin(@RequestParam("username") String username,
                             @RequestParam("password") String password,
                             @RequestParam(value = "remember", required = false) String remember,
@@ -57,26 +57,26 @@ public class UserController {
                 if (remember != null) {
                     session.setMaxInactiveInterval(86400);
                 }
-                return "redirect:/index";
+                return "redirect:index";
             }
             else {
                 redirectAttributes.addFlashAttribute("msg", "密码错误");
-                return "redirect:/login";
+                return "redirect:login";
             }
         }
         catch (Exception e) {
             redirectAttributes.addFlashAttribute("msg", "用户不存在或用户名输入错误！");
-            return "redirect:/login";
+            return "redirect:login";
         }
     }
 
-    @GetMapping("/userLogout")
+    @GetMapping("userLogout")
     public String userLogout(HttpSession session) {
         session.invalidate();
-        return "redirect:/login";
+        return "redirect:login";
     }
 
-    @GetMapping("/userRegister")
+    @GetMapping("userRegister")
     public String userRegister(@RequestParam("username") String username,
                                @RequestParam("email") String email,
                                @RequestParam("password") String password,
@@ -90,6 +90,6 @@ public class UserController {
             String sql = String.format("INSERT INTO user_info(username, password, email) VALUES(\"%s\", \"%s\", \"%s\")", username, password, email);
             jdbcTemplate.update(sql);
         }
-        return "redirect:/login";
+        return "redirect:login";
     }
 }

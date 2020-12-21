@@ -1,6 +1,5 @@
 package com.scucourse.controller;
 
-import com.scucourse.util.Formatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
@@ -8,7 +7,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import javax.servlet.http.HttpSession;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +15,7 @@ public class IndexController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @GetMapping({"/index","/index.html"})
+    @GetMapping({"index","index.html"})
     public String index(Model model, HttpSession session) {
         String currentUser = (String)session.getAttribute("currentUser");
         long currentUserId = (long)session.getAttribute("currentUserId"); // session里面是用long存储的
@@ -26,6 +24,8 @@ public class IndexController {
 
         model.addAttribute("currentUser", currentUser);
         model.addAttribute("currentCourse", currentCourse);
+        model.addAttribute("currentUserType", (String)session.getAttribute("currentUserType"));
+
 
         String sql = String.format("SELECT course_created,course_joined FROM user_info WHERE(username = \"%s\")", currentUser);
         Map<String, Object> userInfo = jdbcTemplate.queryForMap(sql);

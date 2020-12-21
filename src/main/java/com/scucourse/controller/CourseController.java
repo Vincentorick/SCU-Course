@@ -18,7 +18,7 @@ public class CourseController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @GetMapping({"/course", "/course.html"})
+    @GetMapping({"course", "course.html"})
     public String course(Model model, HttpSession session) {
         try {
             String currentCourse = (String)session.getAttribute("currentCourse");
@@ -47,13 +47,13 @@ public class CourseController {
                 model.addAttribute("memberType", "normal");
         }
         catch (NullPointerException e) {
-            return "redirect:/blank";
+            return "redirect:blank";
         }
         return "course";
     }
 
     // 来自index页面的请求
-    @GetMapping("/courseAction")
+    @GetMapping("courseAction")
     public String courseAction(@RequestParam("courseName") String courseName,
                                @RequestParam("action") String action,
                                Model model, HttpSession session) {
@@ -84,10 +84,10 @@ public class CourseController {
                 }
                 catch (Exception e) {
                     System.out.println(e.getMessage());
-                    return "redirect:/index";
+                    return "redirect:index";
                 }
 
-                return "redirect:/index";
+                return "redirect:index";
 
             case "join":
                 // search for course_id
@@ -106,7 +106,7 @@ public class CourseController {
                 sql = String.format("UPDATE course_info SET num_students = num_students + 1 WHERE course_name = \"%s\"", courseName);
                 jdbcTemplate.update(sql);
 
-                return "redirect:/index";
+                return "redirect:index";
 
             case "enter":
                 // search for course_id
@@ -115,15 +115,15 @@ public class CourseController {
 
                 session.setAttribute("currentCourse", courseName);
                 session.setAttribute("currentCourseId", courseId);
-                return "redirect:/course";
+                return "redirect:course";
 
             default:
-                return "redirect:/index";
+                return "redirect:index";
         }
     }
 
     // 来自course页面的请求
-    @GetMapping("/courseUpdate")
+    @GetMapping("courseUpdate")
     public String courseUpdate(@RequestParam("courseName") String courseName,
                                @RequestParam("maxNumStu") String maxNumStu,
                                @RequestParam("action") String action,
@@ -137,7 +137,7 @@ public class CourseController {
                 sql = String.format("UPDATE course_info SET course_name = \"%s\", max_num_students = %s WHERE id = %d", courseName, maxNumStu, currentCourseId);
                 jdbcTemplate.update(sql);
                 session.setAttribute("currentCourse",courseName);
-                return "redirect:/course";
+                return "redirect:course";
             case "delete":
                 sql = String.format("DELETE FROM course_info WHERE id = %s", currentCourseId);
                 jdbcTemplate.update(sql);
@@ -156,7 +156,7 @@ public class CourseController {
                 sql = String.format("UPDATE user_info SET course_created = course_created - 1 WHERE id = %d", currentUserId);
                 jdbcTemplate.update(sql);
 
-                return "redirect:/index";
+                return "redirect:index";
             case "quit":
                 sql = String.format("DELETE FROM student_course WHERE student_id = %d and course_id = %d", currentUserId, currentCourseId);
                 jdbcTemplate.update(sql);
@@ -166,15 +166,15 @@ public class CourseController {
                 // update value num_students in course_info
                 sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %d", currentCourseId);
                 jdbcTemplate.update(sql);
-                return "redirect:/index";
+                return "redirect:index";
 
             default:
-                return "redirect:/course";
+                return "redirect:course";
 
         }
     }
 
-    @GetMapping("/removeStudent")
+    @GetMapping("removeStudent")
     public String removeStudent(@RequestParam("studentName") String studentName,
                                 Model model, HttpSession session) {
         long currentCourseId = (long)session.getAttribute("currentCourseId");
@@ -190,6 +190,6 @@ public class CourseController {
         sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %d", currentCourseId);
         jdbcTemplate.update(sql);
 
-        return "redirect:/course";
+        return "redirect:course";
     }
 }

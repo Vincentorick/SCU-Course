@@ -115,9 +115,9 @@
                 <div class="container-fluid">
 
                     <!-- Page Heading -->
-                    <h1 class="h3 mb-3 text-gray-800">公告板</h1>
+                    <h1 class="h3 mb-3 text-gray-800">公告</h1>
 
-                    <form th:action="@{/bulletinCreate}">
+                    <form th:action="@{bulletinCreate}">
                         <div class="card shadow mb-4">
 
                             <div class="card-header">
@@ -153,7 +153,6 @@
                         </div>
                         <div class="card-body" th:text="${bulletin.content}"></div>
                     </div>
-
 
                 </div>
                 <!-- /.container-fluid -->

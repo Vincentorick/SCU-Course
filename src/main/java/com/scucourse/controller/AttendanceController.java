@@ -21,10 +21,10 @@ public class AttendanceController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @GetMapping({"/attendance", "/attendance.html"})
+    @GetMapping({"attendance", "attendance.html"})
     public String attendance(Model model, HttpSession session) {
         try {
-            String currentUserType = (String) session.getAttribute("currentUserType");
+            String currentUserType = (String)session.getAttribute("currentUserType");
             String currentCourse = (String)session.getAttribute("currentCourse");
             long currentCourseId = (long)session.getAttribute("currentCourseId"); // 可能exception，未设置该属性
 
@@ -86,12 +86,12 @@ public class AttendanceController {
             }
         }
         catch (NullPointerException e) {
-            return "redirect:/blank";
+            return "redirect:blank";
         }
         return "attendance";
     }
 
-    @GetMapping("/attendanceCreate")
+    @GetMapping("attendanceCreate")
     public String attendanceCreate(@RequestParam("title") String title,
                                    @RequestParam("startTime") String startTime,
                                    @RequestParam("endTime") String endTime,
@@ -116,11 +116,10 @@ public class AttendanceController {
                     (int)student.get("student_id"), currentAttendanceId);
             jdbcTemplate.update(sql);
         }
-
-        return "redirect:/attendance";
+        return "redirect:attendance";
     }
 
-    @GetMapping("/studentAttend")
+    @GetMapping("studentAttend")
     public String studentAttend(@RequestParam("attendanceId") String attendanceId,
                                 Model model, HttpSession session) {
         long currentUserId = (long)session.getAttribute("currentUserId");
@@ -135,10 +134,10 @@ public class AttendanceController {
         sql = String.format("UPDATE attendance_info SET num_attended = num_attended + 1 WHERE id = %s", attendanceId);
         jdbcTemplate.update(sql);
 
-        return "redirect:/attendance";
+        return "redirect:attendance";
     }
 
-    @PostMapping("/attendance-detail")
+    @PostMapping("attendance-detail")
     public String attendanceDetail(@RequestParam("attendanceId") String attendanceId,
                                    Model model, HttpSession session) {
         String currentUserType = (String) session.getAttribute("currentUserType");
