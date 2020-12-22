@@ -95,7 +95,7 @@ public class AttendanceController {
     public String attendanceCreate(@RequestParam("title") String title,
                                    @RequestParam("startTime") String startTime,
                                    @RequestParam("endTime") String endTime,
-                                   Model model, HttpSession session) {
+                                   HttpSession session) {
         String currentUser = (String)session.getAttribute("currentUser");
         long currentCourseId = (long)session.getAttribute("currentCourseId");
 
@@ -119,16 +119,25 @@ public class AttendanceController {
         return "redirect:attendance";
     }
 
+    @GetMapping("attendanceDelete")
+    public String attendanceDelete(@RequestParam("attendanceId") String attendanceId,
+                                   HttpSession session) {
+        String sql = String.format("DELETE FROM attendance_info WHERE id = %s", attendanceId);
+        jdbcTemplate.update(sql);
+
+        sql = String.format("DELETE FROM student_attendance WHERE attendance_id = %s", attendanceId);
+        jdbcTemplate.update(sql);
+        return "redirect:attendance";
+    }
+
     @GetMapping("studentAttend")
     public String studentAttend(@RequestParam("attendanceId") String attendanceId,
-                                Model model, HttpSession session) {
+                                HttpSession session) {
         long currentUserId = (long)session.getAttribute("currentUserId");
-        String sql = String.format("UPDATE student_attendance SET attended = 1 WHERE student_id = %d and attendance_id = %s", currentUserId, attendanceId);
-        jdbcTemplate.update(sql);
 
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        sql = String.format("UPDATE student_attendance SET time = \"%s\" WHERE student_id = %d and attendance_id = %s", sdf.format(date), currentUserId, attendanceId);
+        String sql = String.format("UPDATE student_attendance SET attended = 1, time = \"%s\" WHERE student_id = %d and attendance_id = %s", sdf.format(date), currentUserId, attendanceId);
         jdbcTemplate.update(sql);
 
         sql = String.format("UPDATE attendance_info SET num_attended = num_attended + 1 WHERE id = %s", attendanceId);
@@ -140,7 +149,7 @@ public class AttendanceController {
     @PostMapping("attendance-detail")
     public String attendanceDetail(@RequestParam("attendanceId") String attendanceId,
                                    Model model, HttpSession session) {
-        String currentUserType = (String) session.getAttribute("currentUserType");
+        String currentUserType = (String)session.getAttribute("currentUserType");
         String currentCourse = (String)session.getAttribute("currentCourse");
 
         model.addAttribute("currentUser", session.getAttribute("currentUser"));

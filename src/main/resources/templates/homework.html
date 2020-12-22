@@ -74,16 +74,10 @@
                     <span>签到</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item active">
                 <a class="nav-link" href="homework.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>作业</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="vote.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>投票</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -185,7 +179,7 @@
 
                     <div th:if="${memberType} eq 'admin'" class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <span class="m-0 font-weight-bold text-primary">签到记录</span>
+                            <span class="m-0 font-weight-bold text-primary">作业记录</span>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -215,15 +209,15 @@
                                         <td th:text="${homework.num_total}"></td>
                                         <td th:text="${homework.num_submitted}"></td>
                                         <td>
-                                            <div class="row">
-                                            <form action="homework-detail" method="post">
-                                                <input hidden name="homeworkId" th:value="${homework.id}">
-                                                <button type="submit" class="btn btn-sm btn-primary ml-2 mr-2">详情</button>
-                                            </form>
-                                            <form action="homeworkDelete">
-                                                <input hidden name="homeworkId" th:value="${homework.id}">
-                                                <button type="submit" class="btn btn-sm btn-danger ml-2">删除</button>
-                                            </form>
+                                            <div class="row no-gutters">
+                                                <form action="homework-detail" method="post">
+                                                    <input hidden name="homeworkId" th:value="${homework.id}">
+                                                    <button type="submit" class="btn btn-sm btn-primary mr-2">查看详情</button>
+                                                </form>
+                                                <form action="homeworkDelete">
+                                                    <input hidden name="homeworkId" th:value="${homework.id}">
+                                                    <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -251,10 +245,23 @@
                                 <textarea readonly rows="6" class="form-control" th:text="${homework.description}"></textarea>
                             </div>
 
-                            <div th:if="${homework.status} eq '未截止' and ${homework.status_student} eq '未提交'">
-                                <form method="POST" enctype="multipart/form-data" th:action="@{fileUpload}">
+                            <div>
+                                <div th:if="${homework.submitted} eq '1'" class="mb-2">
+                                    <form action="homeworkDelete-stu">
+                                        <input hidden type="text" name="homeworkId" th:value="${homework.id}">
+                                        <input hidden type="text" name="fileName" th:value="${homework.fileName}">
+                                        <input hidden type="text" name="fileId" th:value="${homework.fileId}">
+
+                                        <a th:href="${homework.fileUrl}" th:text="${homework.fileName}" class="mr-2"></a>
+                                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                                    </form>
+                                </div>
+
+                                <form method="POST" enctype="multipart/form-data" th:action="@{homeworkSubmit}">
+                                    <input hidden type="text" name="homeworkId" th:value="${homework.id}">
                                     <input type="file" name="file"/>
-                                    <button type="submit" name="source" value="course_file" class="btn btn-sm btn-primary">提交</button>
+                                    <button type="submit" class="btn btn-sm btn-primary mr-2">提交</button>
+                                    <span th:if="${message}" th:text="${message}" class="text-danger"></span>
                                 </form>
                             </div>
 

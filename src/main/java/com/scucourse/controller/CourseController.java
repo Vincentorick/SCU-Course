@@ -1,5 +1,6 @@
 package com.scucourse.controller;
 
+import com.scucourse.storage.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -15,6 +17,14 @@ import java.util.Map;
 
 @Controller
 public class CourseController {
+
+    private final StorageService storageService;
+
+    @Autowired
+    public CourseController(StorageService storageService) {
+        this.storageService = storageService;
+    }
+
     @Autowired
     JdbcTemplate jdbcTemplate;
 
@@ -56,7 +66,7 @@ public class CourseController {
     @GetMapping("courseAction")
     public String courseAction(@RequestParam("courseName") String courseName,
                                @RequestParam("action") String action,
-                               Model model, HttpSession session) {
+                               HttpSession session) {
         String sql;
         String currentUser = (String)session.getAttribute("currentUser");
         long currentUserId = (long)session.getAttribute("currentUserId");
@@ -83,7 +93,6 @@ public class CourseController {
                     jdbcTemplate.update(sql);
                 }
                 catch (Exception e) {
-                    System.out.println(e.getMessage());
                     return "redirect:index";
                 }
 
@@ -127,7 +136,7 @@ public class CourseController {
     public String courseUpdate(@RequestParam("courseName") String courseName,
                                @RequestParam("maxNumStu") String maxNumStu,
                                @RequestParam("action") String action,
-                               Model model, HttpSession session) {
+                               HttpSession session) throws IOException {
         long currentUserId = (long)session.getAttribute("currentUserId");
         long currentCourseId = (long)session.getAttribute("currentCourseId");
         String sql;
@@ -156,6 +165,57 @@ public class CourseController {
                 sql = String.format("UPDATE user_info SET course_created = course_created - 1 WHERE id = %d", currentUserId);
                 jdbcTemplate.update(sql);
 
+                // 删除公告模块所有内容
+                sql = String.format("DELETE FROM bulletin_info WHERE course_id = %s", currentCourseId);
+                jdbcTemplate.update(sql);
+
+                // 删除签到模块所有内容
+                sql = String.format("SELECT id FROM attendance_info WHERE course_id = %d", currentCourseId);
+                List<Map<String, Object>> attendanceIds = jdbcTemplate.queryForList(sql);
+
+                for (Map<String, Object> attendanceId : attendanceIds) {
+                    sql = String.format("DELETE FROM student_attendance WHERE attendance_id = %d", (int)attendanceId.get("id"));
+                    jdbcTemplate.update(sql);
+                }
+
+                sql = String.format("DELETE FROM attendance_info WHERE course_id = %s", currentCourseId);
+                jdbcTemplate.update(sql);
+
+                // 删除作业模块所有内容
+                sql = String.format("SELECT id FROM homework_info WHERE course_id = %d", currentCourseId);
+                List<Map<String, Object>> homeworkIds = jdbcTemplate.queryForList(sql);
+
+                for (Map<String, Object> homeworkId : homeworkIds) {
+                    sql = String.format("SELECT file_id FROM student_homework WHERE homework_id = %s", (int)homeworkId.get("id"));
+                    List<Map<String, Object>> fileIds = jdbcTemplate.queryForList(sql);
+
+                    for (Map<String, Object> fileId : fileIds) {
+                        sql = String.format("SELECT file_name FROM file_info WHERE id = %d", (int) fileId.get("file_id"));
+                        String fileName = jdbcTemplate.queryForObject(sql, String.class);
+
+                        sql = String.format("DELETE FROM file_info WHERE id = %s", (int) fileId.get("file_id"));
+                        jdbcTemplate.update(sql);
+
+                        storageService.delete(fileName);
+                    }
+
+                    sql = String.format("DELETE FROM student_homework WHERE homework_id = %s", (int)homeworkId.get("id"));
+                    jdbcTemplate.update(sql);
+
+                    sql = String.format("DELETE FROM homework_info WHERE id = %s", (int)homeworkId.get("id"));
+                    jdbcTemplate.update(sql);
+                }
+
+                // 删除文件模块所有内容
+                sql = String.format("SELECT file_name FROM file_info WHERE course_id = %d", currentCourseId);
+                List<Map<String, Object>> fileNames = jdbcTemplate.queryForList(sql);
+
+                for (Map<String, Object> fileName : fileNames) {
+                    storageService.delete(fileName.get("file_name").toString());
+                }
+                sql = String.format("DELETE FROM file_info WHERE course_id = %s", currentCourseId);
+                jdbcTemplate.update(sql);
+
                 return "redirect:index";
             case "quit":
                 sql = String.format("DELETE FROM student_course WHERE student_id = %d and course_id = %d", currentUserId, currentCourseId);
@@ -170,13 +230,12 @@ public class CourseController {
 
             default:
                 return "redirect:course";
-
         }
     }
 
     @GetMapping("removeStudent")
     public String removeStudent(@RequestParam("studentName") String studentName,
-                                Model model, HttpSession session) {
+                                HttpSession session) {
         long currentCourseId = (long)session.getAttribute("currentCourseId");
         String sql = String.format("SELECT id FROM user_info WHERE username = \"%s\"", studentName);
         long studentId = (long)jdbcTemplate.queryForObject(sql, Integer.class);

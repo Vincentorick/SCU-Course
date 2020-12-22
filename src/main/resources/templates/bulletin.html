@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title th:text="|${currentCourse} - 公告板|"></title>
+    <title th:text="|${currentCourse} - 公告|"></title>
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -46,6 +46,42 @@
                 <a class="nav-link" href="index.html">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>主页</span></a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <div class="sidebar-heading" th:text="${currentCourse}"></div>
+
+            <li class="nav-item">
+                <a class="nav-link" href="course.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>课程主页</span>
+                </a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="bulletin.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>公告</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="attendance.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>签到</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="homework.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>作业</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="files.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>文件</span>
+                </a>
             </li>
 
             <!-- Divider -->
@@ -117,7 +153,7 @@
                     <!-- Page Heading -->
                     <h1 class="h3 mb-3 text-gray-800">公告</h1>
 
-                    <form th:action="@{bulletinCreate}">
+                    <form th:if="${memberType} eq 'admin'" th:action="@{bulletinCreate}">
                         <div class="card shadow mb-4">
 
                             <div class="card-header">
@@ -145,8 +181,11 @@
                                     th:text="${bulletin.title}"></span>
                                 <ul class="navbar-nav ml-auto">
                                     <li class="nav-item">
-                                        <span th:text="|${bulletin.creator} 发布于 ${bulletin.date_created}|"></span>
-                                        <!-- <button class="btn btn-sm btn-danger">删除</button> -->
+                                        <form action="bulletinDelete">
+                                            <span th:text="|${bulletin.creator} 发布于 ${bulletin.date_created}|" class="mr-2"></span>
+                                            <input hidden name="bulletinId" th:value="${bulletin.id}">
+                                            <button th:if="${memberType} eq 'admin'" class="btn btn-sm btn-danger">删除</button>
+                                        </form>
                                     </li>
                                 </ul>
                             </nav>

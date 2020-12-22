@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.FileSystemUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
@@ -18,6 +17,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -40,9 +41,10 @@ public class FileController {
 	@GetMapping({"files","files.html"})
 	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
 		try {
+			String currentUserType = (String) session.getAttribute("currentUserType");
 			long currentCourseId = (long)session.getAttribute("currentCourseId");
 
-			model.addAttribute("username", session.getAttribute("currentUser"));
+			model.addAttribute("currentUser", session.getAttribute("currentUser"));
 			String currentCourse = (String) session.getAttribute("currentCourse");
 			model.addAttribute("currentCourse", currentCourse);
 			model.addAttribute("currentCourseId", currentCourseId);
@@ -53,15 +55,22 @@ public class FileController {
 			List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,
 					"serveFile", path.getFileName().toString()).build().toUri().toString()).collect(Collectors.toList());
 
-
-			int index = 0;
 			// 修改文件大小格式，并添加url
+			int index = 0;
 			for (Map<String, Object> file : files) {
 				file.replace("size", Formatter.formetFileSize((long) file.get("size")));
 				file.put("url", fileUrls.get(index++));
 				file.replace("date_created", file.get("date_created").toString().substring(0, 16));
 			}
 			model.addAttribute("files", files);
+
+			sql = String.format("SELECT creator FROM course_info WHERE id = %d", currentCourseId);
+			String creator = jdbcTemplate.queryForObject(sql, String.class);
+
+			if (currentUserType.equals("admin") || creator.equals(session.getAttribute("currentUser")))
+				model.addAttribute("memberType", "admin");
+			else
+				model.addAttribute("memberType", "normal");
 		}
 		catch (NullPointerException e) {
 			return "redirect:blank";
@@ -71,11 +80,12 @@ public class FileController {
 
 	@GetMapping("files/{filename:.+}")
 	@ResponseBody
-	public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+	public ResponseEntity<Resource> serveFile(@PathVariable String filename) throws UnsupportedEncodingException {
 
 		Resource file = storageService.loadAsResource(filename);
+
 		return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-				"attachment; filename=\"" + file.getFilename() + "\"").body(file);
+				"attachment; filename=\"" + URLEncoder.encode(file.getFilename(), "UTF-8") + "\"").body(file);
 	}
 
 	@PostMapping("fileUpload")

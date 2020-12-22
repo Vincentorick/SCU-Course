@@ -68,7 +68,7 @@
                     <span>公告</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item active">
                 <a class="nav-link" href="attendance.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>签到</span>
@@ -78,12 +78,6 @@
                 <a class="nav-link" href="homework.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>作业</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="vote.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>投票</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -219,10 +213,17 @@
                                             <td th:text="${attendance.num_total}"></td>
                                             <td th:text="${attendance.num_attended}"></td>
                                             <td>
-                                                <form action="attendance-detail" method="post">
-                                                    <input hidden name="attendanceId" th:value="${attendance.id}">
-                                                    <button type="submit" class="btn btn-sm btn-primary">查看详情</button>
-                                                </form>
+                                                <div class="row no-gutters">
+                                                    <form action="attendance-detail" method="post">
+                                                        <input hidden name="attendanceId" th:value="${attendance.id}">
+                                                        <button type="submit" class="btn btn-sm btn-primary mr-2">查看详情</button>
+                                                    </form>
+                                                    <form action="attendanceDelete">
+                                                        <input hidden name="attendanceId" th:value="${attendance.id}">
+                                                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                                                    </form>
+                                                </div>
+
                                             </td>
                                         </tr>
                                     </tbody>

@@ -68,28 +68,22 @@
                     <span>公告</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="attendance.html">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>签到</span>
+                </a>
+            </li>
             <li class="nav-item active">
-                <a class="nav-link" href="files.html">
+                <a class="nav-link" href="homework.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>考勤</span>
+                    <span>作业</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="files.html">
                     <i class="fas fa-fw fa-table"></i>
-                    <span>投票</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="files.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>问卷调查</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="files.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>文件管理</span>
+                    <span>文件</span>
                 </a>
             </li>
 
@@ -210,6 +204,7 @@
                                         <th>学生姓名</th>
                                         <th>提交状态</th>
                                         <th>提交时间</th>
+                                        <th>内容</th>
                                     </tr>
                                     </thead>
                                     <tfoot>
@@ -217,13 +212,17 @@
                                         <th>学生姓名</th>
                                         <th>提交状态</th>
                                         <th>提交时间</th>
+                                        <th>内容</th>
                                     </tr>
                                     </tfoot>
                                     <tbody>
                                     <tr th:each="student : ${studentList}">
                                         <td th:text="${student.username}"></td>
-                                        <td th:text="${student.submitted}"></td>
+                                        <td th:text="${student.submit_status}"></td>
                                         <td th:text="${student.time}"></td>
+                                        <td>
+                                            <a th:if="${student.submitted} eq '1'" th:href="${student.fileUrl}" th:text="${student.fileName}"></a>
+                                        </td>
                                     </tr>
                                     </tbody>
                                 </table>

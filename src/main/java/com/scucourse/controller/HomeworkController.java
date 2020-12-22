@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -85,6 +86,14 @@ public class HomeworkController {
 
                     homework.replace("deadline", homework.get("deadline").toString().substring(0, 16));
                     homework.put("status_student", (int)homework.get("submitted") == 1 ? "已提交" : "未提交");
+
+                    if ((int)homework.get("submitted") == 1) {
+                        sql = String.format("SELECT * FROM file_info WHERE id = %d", (int) homework.get("file_id"));
+                        Map<String, Object> fileInfo = jdbcTemplate.queryForMap(sql);
+                        homework.put("fileId", (long) fileInfo.get("id"));
+                        homework.put("fileName", (String) fileInfo.get("file_name"));
+                        homework.put("fileUrl", "files/" + (String) fileInfo.get("file_name"));
+                    }
                 }
                 Collections.reverse(homeworkList_stu);
                 model.addAttribute("homeworkList_stu", homeworkList_stu);
@@ -101,7 +110,7 @@ public class HomeworkController {
     public String homeworkCreate(@RequestParam("title") String title,
                                  @RequestParam("deadline") String deadline,
                                  @RequestParam("description") String description,
-                                 Model model, HttpSession session) {
+                                 HttpSession session) {
         String currentUser = (String)session.getAttribute("currentUser");
         long currentCourseId = (long)session.getAttribute("currentCourseId");
 
@@ -126,9 +135,21 @@ public class HomeworkController {
     }
 
     @GetMapping("homeworkDelete")
-    public String homeworkDelete(@RequestParam("homeworkId") String homeworkId) {
+    public String homeworkDelete(@RequestParam("homeworkId") String homeworkId) throws IOException {
         String sql = String.format("DELETE FROM homework_info WHERE id = %s", homeworkId);
         jdbcTemplate.update(sql);
+
+        sql = String.format("SELECT file_id FROM student_homework WHERE homework_id = %s", homeworkId);
+        List<Map<String, Object>> fileIds = jdbcTemplate.queryForList(sql);
+
+        for (Map<String, Object> fileId : fileIds) {
+            sql = String.format("SELECT file_name FROM file_info WHERE id = %d", (int)fileId.get("file_id"));
+            String fileName = jdbcTemplate.queryForObject(sql, String.class);
+
+            sql = String.format("DELETE FROM file_info WHERE id = %s", (int)fileId.get("file_id"));
+            jdbcTemplate.update(sql);
+            storageService.delete(fileName);
+        }
 
         sql = String.format("DELETE FROM student_homework WHERE homework_id = %s", homeworkId);
         jdbcTemplate.update(sql);
@@ -136,14 +157,36 @@ public class HomeworkController {
         return "redirect:homework";
     }
 
+    @GetMapping("homeworkDelete-stu")
+    public String homeworkDeleteStu(@RequestParam("homeworkId") String homeworkId,
+                                    @RequestParam("fileName") String fileName,
+                                    @RequestParam("fileId") String fileId,
+                                    HttpSession session) throws IOException {
+        storageService.delete(fileName);
+        String sql = String.format("DELETE FROM file_info WHERE id = %s", fileId);
+        jdbcTemplate.update(sql);
+
+        sql = String.format("UPDATE student_homework SET submitted = 0, time = 0, file_id = 0 WHERE student_id = %d and homework_id = %s",
+                (long)session.getAttribute("currentUserId"), homeworkId);
+        jdbcTemplate.update(sql);
+
+        sql = String.format("UPDATE homework_info SET num_submitted = num_submitted - 1 WHERE id = %s", homeworkId);
+        jdbcTemplate.update(sql);
+
+        return "redirect:homework";
+    }
+
     @PostMapping("homeworkSubmit")
     public String homeworkSumbit(@RequestParam("file") MultipartFile file,
+                                 @RequestParam("homeworkId") String homeworkId,
                                  RedirectAttributes redirectAttributes,
-                                 Model model, HttpSession session) {
+                                 HttpSession session) {
         if (file.isEmpty()){
             redirectAttributes.addFlashAttribute("message", "请选择文件！");
-            return "redirect:files";
+            return "redirect:homework";
         }
+
+        storageService.store(file);
 
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -151,15 +194,22 @@ public class HomeworkController {
                 (long) session.getAttribute("currentCourseId"), file.getOriginalFilename(), "student_homework", file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
         jdbcTemplate.update(sql);
 
-        storageService.store(file);
-        redirectAttributes.addFlashAttribute("message", file.getOriginalFilename() + " 上传成功!");
+        sql = String.format("SELECT MAX(id) FROM file_info WHERE course_id = %d", (long)session.getAttribute("currentCourseId"));
+        int fileId = (int)jdbcTemplate.queryForObject(sql, Integer.class);
 
-        return "redirect:files";
+        sql = String.format("UPDATE student_homework SET submitted = 1, time = \"%s\", file_id = %d WHERE student_id = %d and homework_id = %s",
+                sdf.format(date), fileId, (long)session.getAttribute("currentUserId"), homeworkId);
+        jdbcTemplate.update(sql);
+
+        sql = String.format("UPDATE homework_info SET num_submitted = num_submitted + 1 WHERE id = %s", homeworkId);
+        jdbcTemplate.update(sql);
+
+        return "redirect:homework";
     }
 
     @PostMapping("homework-detail")
     public String homeworkDetail(@RequestParam("homeworkId") String homeworkId,
-                                   Model model, HttpSession session) {
+                                 Model model, HttpSession session) {
         String currentUserType = (String) session.getAttribute("currentUserType");
         String currentCourse = (String)session.getAttribute("currentCourse");
 
@@ -182,7 +232,15 @@ public class HomeworkController {
             catch (NullPointerException e) {
                 student.replace("time", " ");
             }
-            student.replace("submitted", (int)student.get("submitted") == 1? "已提交" : "未提交");
+            student.put("submit_status", (int)student.get("submitted") == 1? "已提交" : "未提交");
+
+            if ((int)student.get("submitted") == 1) {
+                sql = String.format("SELECT * FROM file_info WHERE id = %d", (int) student.get("file_id"));
+                Map<String, Object> fileInfo = jdbcTemplate.queryForMap(sql);
+
+                student.put("fileName", fileInfo.get("file_name"));
+                student.put("fileUrl", "files/" + fileInfo.get("file_name"));
+            }
         }
         model.addAttribute("studentList", studentList);
         return "homework-detail";

@@ -35,7 +35,8 @@
                             <div class="text-center">
                                 <h1 class="h4 text-gray-900 mb-4">注册账号</h1>
                             </div>
-                            <form class="user" th:action="@{userRegister}">
+                            <p th:if="${not #strings.isEmpty(message)}" th:text="${message}"></p>
+                            <form class="user" action="userRegister">
                                 <div class="form-group">
                                     <input name="username" type="text" class="form-control form-control-user" id="InputUsername"
                                            placeholder="用户名">
@@ -54,37 +55,26 @@
                                             id="RepeatPassword" placeholder="确认密码">
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary btn-user btn-block" data-toggle="modal" data-target="#RegisterSuccessModal">
-                                    注册
-                                </button>
+                                <div class="form-group">
+                                    <label>
+                                        <input type="radio" name="type" value="student" checked>
+                                        学生
+                                    </label>
+                                    <label>
+                                        <input type="radio" name="type" value="teacher">
+                                        教师
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-user btn-block">注册</button>
                             </form>
                             <hr>
                             <div class="text-center">
-                                <a class="small" th:href="@{forgot-password.html}">忘记密码</a>
+                                <a class="small" href="forgot-password.html">忘记密码</a>
                             </div>
                             <div class="text-center">
-                                <a class="small" th:href="@{login.html}">已经注册了？立刻登录！</a>
+                                <a class="small" href="login.html">已经注册了？立刻登录！</a>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Register Success Modal-->
-        <div class="modal fade" id="RegisterSuccessModal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
-             aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="ModalLabel">Login now?</h5>
-                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">×</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">You have successfully registered! Do you want to login now?</div>
-                    <div class="modal-footer">
-                        <a class="btn btn-secondary" data-dismiss="modal" th:href="login.html">Cancel</a>
-                        <a class="btn btn-primary" th:href="@{index.html}">Yes</a>
                     </div>
                 </div>
             </div>
