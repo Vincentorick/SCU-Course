@@ -10,6 +10,7 @@
     <meta name="author" content="">
 
     <title>SCU Course - 主页</title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.ico">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -121,23 +122,23 @@
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600" th:text="${currentUser}"></span>
-                                <img class="img-profile rounded-circle" th:src="@{images/undraw_profile.svg}">
+                                <img class="img-profile rounded-circle" src="images/undraw_profile.svg">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Profile
+                                    个人信息
                                 </a>
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
+                                    设置
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Logout
+                                    退出登录
                                 </a>
                             </div>
                         </li>
@@ -164,7 +165,7 @@
                                             <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${userInfo.course_created}"></div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                            <i class="fas fa-atom fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -180,7 +181,7 @@
                                             <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${userInfo.course_joined}"></div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                            <i class="fas fa-atlas fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -212,7 +213,7 @@
                                             <div class="h5 mb-0 font-weight-bold text-gray-800">0</div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-comments fa-2x text-gray-300"></i>
+                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -230,7 +231,8 @@
                                 <input name="courseName" type="text" class="bg-light border-primary mr-2" placeholder="课程名称">
                                 <button th:if="${currentUserType} eq 'admin' or ${currentUserType} eq 'teacher'"
                                         type="submit" name="action" value="create" class="btn btn-primary mr-2">创建</button>
-                                <button type="submit" name="action" value="join" class="btn btn-success">加入</button>
+                                <button type="submit" name="action" value="searchJoin" class="btn btn-success mr-2">加入</button>
+                                <span class="h6" th:text="${message}"></span>
                             </form>
                         </div>
                     </div>
@@ -245,6 +247,7 @@
                                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                                     <thead>
                                     <tr>
+                                        <th>课程号</th>
                                         <th>课程名</th>
                                         <th>学生人数</th>
                                         <th>创建者</th>
@@ -254,6 +257,7 @@
                                     </thead>
                                     <tfoot>
                                     <tr>
+                                        <th>课程号</th>
                                         <th>课程名</th>
                                         <th>学生人数</th>
                                         <th>创建者</th>
@@ -263,13 +267,15 @@
                                     </tfoot>
                                     <tbody>
                                     <tr th:each="course : ${courses}">
+                                        <td th:text="${course.id}"/></td>
                                         <td th:text="${course.course_name}"/></td>
                                         <td th:text="${course.num_students}"></td>
                                         <td th:text="${course.creator}"></td>
                                         <td th:text="${course.date_created}"></td>
                                         <td>
-                                            <form th:action="@{courseAction}">
+                                            <form action="/courseAction">
                                                 <input hidden name="courseName" type="text" th:value="${course.course_name}">
+                                                <input hidden name="courseIdToEnter" type="text" th:value="${course.id}">
                                                 <div th:switch="${course.joined}">
                                                     <button th:case="'1'" type="submit" class="btn btn-sm btn-primary" name="action" value="enter">进入课程</button>
                                                     <button th:case="'0'" type="submit" class="btn btn-sm btn-success" name="action" value="join">加入课程</button>
@@ -316,15 +322,15 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">确定退出吗？</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-body">将清除登录信息，并离开系统</div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="userLogout">Logout</a>
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">取消</button>
+                    <a class="btn btn-primary" href="userLogout">退出</a>
                 </div>
             </div>
         </div>

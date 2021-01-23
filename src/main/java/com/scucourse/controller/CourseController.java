@@ -1,15 +1,30 @@
 package com.scucourse.controller;
 
 import com.scucourse.storage.StorageService;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpSession;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -31,17 +46,18 @@ public class CourseController {
     @GetMapping({"course", "course.html"})
     public String course(Model model, HttpSession session) {
         try {
-            String currentCourse = (String)session.getAttribute("currentCourse");
-            long currentCourseId = (long)session.getAttribute("currentCourseId"); // 可能exception，未设置该属性
+            String currentCourse = (String) session.getAttribute("currentCourse");
+            String currentCourseId = (String) session.getAttribute("currentCourseId"); // 可能exception，未设置该属性
 
             model.addAttribute("currentUser", session.getAttribute("currentUser"));
             model.addAttribute("currentCourse", currentCourse);
 
-            String sql = String.format("SELECT * FROM course_info WHERE id = %d", currentCourseId);
+            String sql = String.format("SELECT * FROM course_info WHERE id = %s", currentCourseId);
             Map<String, Object> courseInfo = jdbcTemplate.queryForMap(sql);
+            courseInfo.replace("date_created", courseInfo.get("date_created").toString().substring(0, 16));
             model.addAttribute("courseInfo", courseInfo);
 
-            sql = String.format("SELECT student_id,grade FROM student_course WHERE course_id = %d AND is_creator = 0", currentCourseId);
+            sql = String.format("SELECT * FROM student_course WHERE course_id = %s AND is_creator = 0", currentCourseId);
             List<Map<String, Object>> students = jdbcTemplate.queryForList(sql);
 
             for (Map<String, Object> student : students) {
@@ -56,7 +72,7 @@ public class CourseController {
             else
                 model.addAttribute("memberType", "normal");
         }
-        catch (NullPointerException e) {
+        catch (Exception e) {
             return "redirect:blank";
         }
         return "course";
@@ -66,64 +82,97 @@ public class CourseController {
     @GetMapping("courseAction")
     public String courseAction(@RequestParam("courseName") String courseName,
                                @RequestParam("action") String action,
-                               HttpSession session) {
+                               @RequestParam(value = "courseIdToEnter", required = false) String courseIdToEnter,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
         String sql;
         String currentUser = (String)session.getAttribute("currentUser");
-        long currentUserId = (long)session.getAttribute("currentUserId");
-        long courseId;
+        String currentUserId = session.getAttribute("currentUserId").toString();
+        int courseId;
 
         switch (action) {
             case "create":
-                Date date = new Date();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                try {
-                    // 在course_info中增加条目
-                    sql = String.format("INSERT INTO course_info(course_name,creator,date_created) VALUES(\"%s\", \"%s\", \"%s\")",
-                            courseName, currentUser, sdf.format(date));
-                    jdbcTemplate.update(sql);
-
-                    // update table student_course
-                    sql = String.format("SELECT id FROM course_info WHERE course_name = \"%s\"", courseName);
-                    courseId = jdbcTemplate.queryForObject(sql, Integer.class);
-                    sql = String.format("INSERT INTO student_course(student_id,course_id,is_creator) VALUES(%d,%d,1)", currentUserId, courseId);
-                    jdbcTemplate.update(sql);
-
-                    // update value course_created
-                    sql = String.format("UPDATE user_info SET course_created = course_created + 1 WHERE username = \"%s\"", currentUser);
-                    jdbcTemplate.update(sql);
-                }
-                catch (Exception e) {
+                if (courseName.equals("")) {
+                    redirectAttributes.addFlashAttribute("message", "请输入课程名");
                     return "redirect:index";
                 }
+
+                sql = String.format("SELECT * FROM course_info WHERE course_name = \"%s\"", courseName);
+                try {
+                    if (!jdbcTemplate.queryForMap(sql).isEmpty()) {
+                        redirectAttributes.addFlashAttribute("message", "课程名已被占用");
+                        return "redirect:index";
+                    }
+                } catch (Exception ignored) {}
+
+                Date date = new Date();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                sql = String.format("INSERT INTO course_info(course_name,creator,date_created) VALUES(\"%s\", \"%s\", \"%s\")",
+                        courseName, currentUser, sdf.format(date));
+                jdbcTemplate.update(sql);
+
+                sql = "SELECT MAX(id) FROM course_info";
+                courseId = jdbcTemplate.queryForObject(sql, Integer.class);
+                sql = String.format("INSERT INTO student_course(student_id,course_id,is_creator) VALUES(%s,%d,1)", currentUserId, courseId);
+                jdbcTemplate.update(sql);
+
+                sql = String.format("UPDATE user_info SET course_created = course_created + 1 WHERE username = \"%s\"", currentUser);
+                jdbcTemplate.update(sql);
 
                 return "redirect:index";
 
             case "join":
-                // search for course_id
                 sql = String.format("SELECT id FROM course_info WHERE course_name = \"%s\"", courseName);
                 courseId = jdbcTemplate.queryForObject(sql, Integer.class);
 
-                // update table student_course
-                sql = String.format("INSERT INTO student_course(student_id,course_id) VALUES(%d,%d)", currentUserId, courseId);
+                sql = String.format("INSERT INTO student_course(student_id,course_id) VALUES(%s,%d)", currentUserId, courseId);
                 jdbcTemplate.update(sql);
 
-                // update value course_joined in user_info
                 sql = String.format("UPDATE user_info SET course_joined = course_joined + 1 WHERE username = \"%s\"", currentUser);
                 jdbcTemplate.update(sql);
 
-                // update value num_students in course_info
                 sql = String.format("UPDATE course_info SET num_students = num_students + 1 WHERE course_name = \"%s\"", courseName);
                 jdbcTemplate.update(sql);
 
                 return "redirect:index";
 
-            case "enter":
-                // search for course_id
-                sql = String.format("SELECT id FROM course_info WHERE course_name = \"%s\"", courseName);
-                courseId = jdbcTemplate.queryForObject(sql, Integer.class);
+            case "searchJoin":
+                if (courseName.equals("")) {
+                    redirectAttributes.addFlashAttribute("message", "请输入课程名");
+                    return "redirect:index";
+                }
+                try {
+                    sql = String.format("SELECT * FROM course_info WHERE course_name = \"%s\"", courseName);
+                    if (!jdbcTemplate.queryForMap(sql).isEmpty()) {
+                        redirectAttributes.addFlashAttribute("message", "加入成功");
+                    }
+                } catch (DataAccessException e) {
+                    redirectAttributes.addFlashAttribute("message", "课程不存在");
+                    return "redirect:index";
+                }
 
+                try {
+                    sql = String.format("SELECT id FROM course_info WHERE course_name = \"%s\"", courseName);
+                    courseId = jdbcTemplate.queryForObject(sql, Integer.class);
+
+                    sql = String.format("INSERT INTO student_course(student_id,course_id) VALUES(%s,%d)", currentUserId, courseId);
+                    jdbcTemplate.update(sql);
+
+                    sql = String.format("UPDATE user_info SET course_joined = course_joined + 1 WHERE username = \"%s\"", currentUser);
+                    jdbcTemplate.update(sql);
+
+                    sql = String.format("UPDATE course_info SET num_students = num_students + 1 WHERE course_name = \"%s\"", courseName);
+                    jdbcTemplate.update(sql);
+                } catch (Exception e) {
+                    redirectAttributes.addFlashAttribute("message", "您已加入该课程");
+                }
+
+                return "redirect:index";
+
+            case "enter":
                 session.setAttribute("currentCourse", courseName);
-                session.setAttribute("currentCourseId", courseId);
+                session.setAttribute("currentCourseId", courseIdToEnter);
                 return "redirect:course";
 
             default:
@@ -136,95 +185,68 @@ public class CourseController {
     public String courseUpdate(@RequestParam("courseName") String courseName,
                                @RequestParam("maxNumStu") String maxNumStu,
                                @RequestParam("action") String action,
-                               HttpSession session) throws IOException {
-        long currentUserId = (long)session.getAttribute("currentUserId");
-        long currentCourseId = (long)session.getAttribute("currentCourseId");
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) throws IOException {
+        String currentUserId = session.getAttribute("currentUserId").toString();
+        String currentCourseId = (String) session.getAttribute("currentCourseId");
         String sql;
 
         switch (action) {
             case "save":
-                sql = String.format("UPDATE course_info SET course_name = \"%s\", max_num_students = %s WHERE id = %d", courseName, maxNumStu, currentCourseId);
+                if (courseName.equals("")) {
+                    redirectAttributes.addFlashAttribute("message", "课程名不能为空");
+                    return "redirect:course";
+                }
+                if (Integer.parseInt(maxNumStu) < 0) {
+                    redirectAttributes.addFlashAttribute("message", "人数上限不能为负数");
+                    return "redirect:course";
+                }
+                sql = String.format("SELECT * FROM course_info WHERE id != %s AND course_name = \"%s\"", currentCourseId, courseName);
+                try {
+                    if (!jdbcTemplate.queryForMap(sql).isEmpty()) {
+                        redirectAttributes.addFlashAttribute("message", "课程名已被占用");
+                        return "redirect:course";
+                    }
+                } catch (Exception ignored) {}
+                sql = String.format("UPDATE course_info SET course_name = \"%s\", max_num_students = %s WHERE id = %s", courseName, maxNumStu, currentCourseId);
                 jdbcTemplate.update(sql);
                 session.setAttribute("currentCourse",courseName);
                 return "redirect:course";
+
             case "delete":
-                sql = String.format("DELETE FROM course_info WHERE id = %s", currentCourseId);
+                session.removeAttribute("currentCourse");
+                session.removeAttribute("currentCourseId");
+
+                sql = String.format("UPDATE user_info SET course_created = course_created - 1 WHERE id = %s", currentUserId);
                 jdbcTemplate.update(sql);
 
-                sql = String.format("SELECT student_id FROM student_course WHERE (course_id = %d and is_creator = 0)", currentCourseId);
+                sql = String.format("SELECT student_id FROM student_course WHERE (course_id = %s and is_creator = 0)", currentCourseId);
                 List<Map<String, Object>> studentList = jdbcTemplate.queryForList(sql);
-                for (int i = 0; i < studentList.size(); ++i) {
-                    sql = String.format("UPDATE user_info SET course_joined = course_joined - 1 WHERE id = %d", (int)studentList.get(i).get("student_id"));
+                for (Map<String, Object> student : studentList) {
+                    sql = String.format("UPDATE user_info SET course_joined = course_joined - 1 WHERE id = %d", (int) student.get("student_id"));
                     jdbcTemplate.update(sql);
                 }
 
-                sql = String.format("DELETE FROM student_course WHERE course_id = %s", currentCourseId);
-                jdbcTemplate.update(sql);
-
-                // update value course_created in user_info
-                sql = String.format("UPDATE user_info SET course_created = course_created - 1 WHERE id = %d", currentUserId);
-                jdbcTemplate.update(sql);
-
-                // 删除公告模块所有内容
-                sql = String.format("DELETE FROM bulletin_info WHERE course_id = %s", currentCourseId);
-                jdbcTemplate.update(sql);
-
-                // 删除签到模块所有内容
-                sql = String.format("SELECT id FROM attendance_info WHERE course_id = %d", currentCourseId);
-                List<Map<String, Object>> attendanceIds = jdbcTemplate.queryForList(sql);
-
-                for (Map<String, Object> attendanceId : attendanceIds) {
-                    sql = String.format("DELETE FROM student_attendance WHERE attendance_id = %d", (int)attendanceId.get("id"));
-                    jdbcTemplate.update(sql);
-                }
-
-                sql = String.format("DELETE FROM attendance_info WHERE course_id = %s", currentCourseId);
-                jdbcTemplate.update(sql);
-
-                // 删除作业模块所有内容
-                sql = String.format("SELECT id FROM homework_info WHERE course_id = %d", currentCourseId);
-                List<Map<String, Object>> homeworkIds = jdbcTemplate.queryForList(sql);
-
-                for (Map<String, Object> homeworkId : homeworkIds) {
-                    sql = String.format("SELECT file_id FROM student_homework WHERE homework_id = %s", (int)homeworkId.get("id"));
-                    List<Map<String, Object>> fileIds = jdbcTemplate.queryForList(sql);
-
-                    for (Map<String, Object> fileId : fileIds) {
-                        sql = String.format("SELECT file_name FROM file_info WHERE id = %d", (int) fileId.get("file_id"));
-                        String fileName = jdbcTemplate.queryForObject(sql, String.class);
-
-                        sql = String.format("DELETE FROM file_info WHERE id = %s", (int) fileId.get("file_id"));
-                        jdbcTemplate.update(sql);
-
-                        storageService.delete(fileName);
-                    }
-
-                    sql = String.format("DELETE FROM student_homework WHERE homework_id = %s", (int)homeworkId.get("id"));
-                    jdbcTemplate.update(sql);
-
-                    sql = String.format("DELETE FROM homework_info WHERE id = %s", (int)homeworkId.get("id"));
-                    jdbcTemplate.update(sql);
-                }
-
-                // 删除文件模块所有内容
-                sql = String.format("SELECT file_name FROM file_info WHERE course_id = %d", currentCourseId);
+                // 删除该课程下所有文件
+                sql = String.format("SELECT file_name FROM file_info WHERE course_id = %s", currentCourseId);
                 List<Map<String, Object>> fileNames = jdbcTemplate.queryForList(sql);
 
                 for (Map<String, Object> fileName : fileNames) {
                     storageService.delete(fileName.get("file_name").toString());
                 }
-                sql = String.format("DELETE FROM file_info WHERE course_id = %s", currentCourseId);
-                jdbcTemplate.update(sql);
 
+                sql = String.format("DELETE FROM course_info WHERE id = %s", currentCourseId);
+                jdbcTemplate.update(sql);
                 return "redirect:index";
+
             case "quit":
-                sql = String.format("DELETE FROM student_course WHERE student_id = %d and course_id = %d", currentUserId, currentCourseId);
+                sql = String.format("DELETE FROM student_course WHERE student_id = %s and course_id = %s", currentUserId, currentCourseId);
                 jdbcTemplate.update(sql);
                 // update value course_joined in user_info
-                sql = String.format("UPDATE user_info SET course_joined = course_joined - 1 WHERE id = %d", currentUserId);
+                sql = String.format("UPDATE user_info SET course_joined = course_joined - 1 WHERE id = %s", currentUserId);
                 jdbcTemplate.update(sql);
                 // update value num_students in course_info
-                sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %d", currentCourseId);
+                sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %s", currentCourseId);
                 jdbcTemplate.update(sql);
                 return "redirect:index";
 
@@ -236,19 +258,64 @@ public class CourseController {
     @GetMapping("removeStudent")
     public String removeStudent(@RequestParam("studentName") String studentName,
                                 HttpSession session) {
-        long currentCourseId = (long)session.getAttribute("currentCourseId");
+        String currentCourseId = (String) session.getAttribute("currentCourseId");
         String sql = String.format("SELECT id FROM user_info WHERE username = \"%s\"", studentName);
-        long studentId = (long)jdbcTemplate.queryForObject(sql, Integer.class);
+        int studentId = (int)jdbcTemplate.queryForObject(sql, Integer.class);
 
-        sql = String.format("DELETE FROM student_course WHERE student_id = %d and course_id = %d", studentId, currentCourseId);
+        sql = String.format("DELETE FROM student_course WHERE student_id = %d and course_id = %s", studentId, currentCourseId);
         jdbcTemplate.update(sql);
 
         sql = String.format("UPDATE user_info SET course_joined = course_joined - 1 WHERE id = %d", studentId);
         jdbcTemplate.update(sql);
 
-        sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %d", currentCourseId);
+        sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %s", currentCourseId);
         jdbcTemplate.update(sql);
 
         return "redirect:course";
+    }
+
+    @GetMapping("courseStudentsExport")
+    public ResponseEntity<Resource> courseStudentsExport(HttpSession session) {
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
+
+            String sql = String.format("SELECT student_id,grade FROM student_course WHERE course_id = %s AND is_creator = 0", (String) session.getAttribute("currentCourseId"));
+            List<Map<String, Object>> students = jdbcTemplate.queryForList(sql);
+
+            for (Map<String, Object> student : students) {
+                sql = String.format("SELECT username FROM user_info WHERE id = %d", (int) student.get("student_id"));
+                String name = jdbcTemplate.queryForObject(sql, String.class);
+                student.put("name", name);
+            }
+
+            Sheet sheet = workbook.createSheet("Sheet");
+            String[] header = {"学生姓名", "成绩"};
+
+            Row headerRow = sheet.createRow(0);
+
+            for (int col = 0; col < header.length; col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(header[col]);
+            }
+
+            int rowIdx = 1;
+            for (Map<String, Object> student : students) {
+                Row row = sheet.createRow(rowIdx++);
+
+                row.createCell(0).setCellValue((String)student.get("name"));
+                row.createCell(1).setCellValue((String)student.get("grade"));
+            }
+
+            workbook.write(out);
+            InputStreamResource file = new InputStreamResource(new ByteArrayInputStream(out.toByteArray()));
+            String fileName = "课程学生信息-" + (String)session.getAttribute("currentCourse") + ".xlsx";
+
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + URLEncoder.encode(fileName, "UTF-8"))
+                    .contentType(MediaType.parseMediaType("application/vnd.ms-excel")).body(file);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to export data to Excel file: " + e.getMessage());
+        }
     }
 }

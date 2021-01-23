@@ -10,6 +10,7 @@
     <meta name="author" content="">
 
     <title th:text="|${currentCourse} - 公告|"></title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.ico">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -128,16 +129,16 @@
                                 aria-labelledby="userDropdown">
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Profile
+                                    个人信息
                                 </a>
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
+                                    设置
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Logout
+                                    退出登录
                                 </a>
                             </div>
                         </li>
@@ -151,7 +152,12 @@
                 <div class="container-fluid">
 
                     <!-- Page Heading -->
-                    <h1 class="h3 mb-3 text-gray-800">公告</h1>
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">公告</h1>
+                        <a th:if="${memberType} eq 'admin'" href="/bulletinExport">
+                            <button class="btn btn-primary">导出表格</button>
+                        </a>
+                    </div>
 
                     <form th:if="${memberType} eq 'admin'" th:action="@{bulletinCreate}">
                         <div class="card shadow mb-4">
@@ -162,6 +168,7 @@
                                     <input name="title" placeholder="标题" class="form-control-sm border-primary">
                                     <ul class="navbar-nav ml-auto">
                                         <li class="nav-item">
+                                            <span class="h6 mr-2" th:text="${message}"></span>
                                             <button class="btn btn-primary">发布</button>
                                         </li>
                                     </ul>
@@ -184,7 +191,7 @@
                                         <form action="bulletinDelete">
                                             <span th:text="|${bulletin.creator} 发布于 ${bulletin.date_created}|" class="mr-2"></span>
                                             <input hidden name="bulletinId" th:value="${bulletin.id}">
-                                            <button th:if="${memberType} eq 'admin'" class="btn btn-sm btn-danger">删除</button>
+                                            <button th:if="${memberType} eq 'admin'" type="submit" class="btn btn-danger">删除</button>
                                         </form>
                                     </li>
                                 </ul>
@@ -226,15 +233,15 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">确定退出吗？</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-body">将清除登录信息，并离开系统</div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="login.html">Logout</a>
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">取消</button>
+                    <a class="btn btn-primary" href="userLogout">退出</a>
                 </div>
             </div>
         </div>

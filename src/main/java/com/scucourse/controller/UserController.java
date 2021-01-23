@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -57,7 +56,7 @@ public class UserController {
 
             if (password.equals(result.get("password"))) {
                 session.setAttribute("currentUser", username);
-                session.setAttribute("currentUserId", result.get("id")); //数据类型为long
+                session.setAttribute("currentUserId", result.get("id"));
                 session.setAttribute("currentUserType", result.get("user_type"));
 
                 if (remember != null) {
@@ -71,7 +70,7 @@ public class UserController {
             }
         }
         catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "用户不存在或用户名输入错误！");
+            redirectAttributes.addFlashAttribute("message", "用户名输入错误");
             return "redirect:login";
         }
     }
@@ -134,14 +133,22 @@ public class UserController {
                                 @RequestParam("code") String code,
                                 @RequestParam("newPassword") String newPassword,
                                 @RequestParam("action") String action,
+                                HttpSession session,
                                 RedirectAttributes redirectAttributes) {
+        if (username.equals("")) {
+            redirectAttributes.addFlashAttribute("message", "请输入用户名");
+            redirectAttributes.addFlashAttribute("lastUsername", username);
+            return "redirect:forgot-password";
+        }
+
         String sql, email;
         try {
             sql = String.format("SELECT email FROM user_info WHERE username = \"%s\"", username);
-            email = (String)jdbcTemplate.queryForObject(sql, String.class);
+            email = jdbcTemplate.queryForObject(sql, String.class);
         }
         catch (EmptyResultDataAccessException e) {
             redirectAttributes.addFlashAttribute("message", "用户不存在");
+            redirectAttributes.addFlashAttribute("lastUsername", username);
             return "redirect:forgot-password";
         }
 
@@ -152,40 +159,50 @@ public class UserController {
                 simpleMailMessage.setTo(email);
 
                 Random random = new Random();
-                int verificationCode;
+                long verificationCode;
                 do {
-                    verificationCode = (int)(random.nextDouble() * 1000000);
+                    verificationCode = (long)(random.nextDouble() * 1000000);
                 } while (verificationCode < 100000);
 
-                simpleMailMessage.setSubject("SCU Course 重置密码身份验证");
-                simpleMailMessage.setText("您好，验证码是 " + verificationCode);
+                session.setAttribute("code", verificationCode);
 
-                sql = String.format("INSERT INTO verification_info(username,email,code) VALUES(\"%s\",\"%s\",\"%d\")",
-                        username, email, verificationCode);
-                jdbcTemplate.update(sql);
+                simpleMailMessage.setSubject("SCU Course 重置密码身份验证");
+                simpleMailMessage.setText(username + "：\n\t您好，用于SCU Course账号找回密码的验证码是 " + verificationCode + " ，有效期30分钟。如有其他问题欢迎联系 vincentorick@163.com 咨询。\n\nSCU Course团队");
 
                 javaMailSender.send(simpleMailMessage);
 
+                redirectAttributes.addFlashAttribute("message", "验证码发送成功");
                 redirectAttributes.addFlashAttribute("lastUsername", username);
                 return "redirect:forgot-password";
 
             case "reset":
                 try {
-                    sql = String.format("SELECT code FROM verification_info WHERE email = \"%s\"", email);
-                    String code_sent = jdbcTemplate.queryForObject(sql, String.class);
-
-                    if (code_sent.equals(code)) {
-                        sql = String.format("UPDATE user_info SET password = \"%s\" WHERE username = \"%s\"", newPassword, username);
-                        jdbcTemplate.update(sql);
+                    if (code.equals("")) {
+                        redirectAttributes.addFlashAttribute("message", "请输入验证码");
+                        redirectAttributes.addFlashAttribute("lastUsername", username);
+                        return "redirect:forgot-password";
                     }
-                    sql = String.format("DELETE FROM verification_info WHERE username = \"%s\"", username);
+                    if (!code.equals(session.getAttribute("code").toString())) {
+                        redirectAttributes.addFlashAttribute("message", "验证码错误");
+                        redirectAttributes.addFlashAttribute("lastUsername", username);
+                        return "redirect:forgot-password";
+                    }
+                    if (newPassword.equals("")) {
+                        redirectAttributes.addFlashAttribute("message", "请输入新密码");
+                        redirectAttributes.addFlashAttribute("lastUsername", username);
+                        return "redirect:forgot-password";
+                    }
+
+                    sql = String.format("UPDATE user_info SET password = \"%s\" WHERE username = \"%s\"", newPassword, username);
                     jdbcTemplate.update(sql);
 
-                    redirectAttributes.addFlashAttribute("message", "密码重置成功！");
+                    session.removeAttribute("code");
+                    redirectAttributes.addFlashAttribute("message", "密码重置成功，欢迎登录！");
                     return "redirect:login";
                 }
                 catch (NullPointerException e) {
                     redirectAttributes.addFlashAttribute("message", "尚未发送验证码");
+                    redirectAttributes.addFlashAttribute("lastUsername", username);
                     return "redirect:forgot-password";
                 }
         }

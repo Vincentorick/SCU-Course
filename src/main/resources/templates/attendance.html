@@ -10,6 +10,7 @@
     <meta name="author" content="">
 
     <title th:text="|${currentCourse} - 签到|"></title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.ico">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -131,16 +132,16 @@
                                 aria-labelledby="userDropdown">
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Profile
+                                    个人信息
                                 </a>
                                 <a class="dropdown-item" href="#">
                                     <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
+                                    设置
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Logout
+                                    退出登录
                                 </a>
                             </div>
                         </li>
@@ -163,6 +164,7 @@
                                     <span class="navbar-brand font-weight-bold text-primary">发起签到</span>
                                     <ul class="navbar-nav ml-auto">
                                         <li class="nav-item">
+                                            <span class="h6 mr-2" th:text="${message}"></span>
                                             <button class="btn btn-primary">确定</button>
                                         </li>
                                     </ul>
@@ -180,7 +182,16 @@
 
                     <div th:if="${memberType} eq 'admin'" class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <span class="m-0 font-weight-bold text-primary">签到记录</span>
+                            <nav class="navbar">
+                                <span class="navbar-brand font-weight-bold text-primary">签到记录</span>
+                                <ul class="navbar-nav ml-auto">
+                                    <li class="nav-item">
+                                        <a href="/attendanceExport">
+                                            <button class="btn btn-primary">导出表格</button>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -288,15 +299,15 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">确定退出吗？</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-body">将清除登录信息，并离开系统</div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="userLogout">Logout</a>
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">取消</button>
+                    <a class="btn btn-primary" href="userLogout">退出</a>
                 </div>
             </div>
         </div>

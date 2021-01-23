@@ -8,7 +8,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 import com.scucourse.storage.StorageProperties;
-import com.scucourse.storage.StorageService;
 
 @SpringBootApplication
 @EnableConfigurationProperties(StorageProperties.class)

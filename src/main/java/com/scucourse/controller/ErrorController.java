@@ -10,7 +10,7 @@ import javax.servlet.http.HttpSession;
 public class ErrorController {
     @GetMapping({"blank", "blank.html"})
     public String blank(Model model, HttpSession session) {
-        String currentUser = (String)session.getAttribute("currentUser");
+        String currentUser = (String) session.getAttribute("currentUser");
         model.addAttribute("currentUser", currentUser);
 
         return "blank";
