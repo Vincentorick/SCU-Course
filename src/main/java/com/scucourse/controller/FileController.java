@@ -3,6 +3,7 @@ package com.scucourse.controller;
 import com.scucourse.storage.StorageFileNotFoundException;
 import com.scucourse.storage.StorageService;
 import com.scucourse.util.Formatter;
+import com.scucourse.util.Log;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -28,9 +29,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -42,6 +40,8 @@ public class FileController {
 
 	private final StorageService storageService;
 
+	Log log = new Log();
+
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
@@ -50,14 +50,15 @@ public class FileController {
 		this.storageService = storageService;
 	}
 
-	@GetMapping({"files","files.html"})
+	@GetMapping({"file","file.html"})
 	public String listUploadedFiles(Model model, HttpSession session) throws IOException {
 		try {
 			String currentUserType = (String) session.getAttribute("currentUserType");
-			String currentCourseId = (String) session.getAttribute("currentCourseId");
-
 			model.addAttribute("currentUser", session.getAttribute("currentUser"));
+			model.addAttribute("currentUserType", currentUserType);
+
 			String currentCourse = (String) session.getAttribute("currentCourse");
+			String currentCourseId = session.getAttribute("currentCourseId").toString();
 			model.addAttribute("currentCourse", currentCourse);
 			model.addAttribute("currentCourseId", currentCourseId);
 
@@ -85,12 +86,13 @@ public class FileController {
 				model.addAttribute("memberType", "normal");
 		}
 		catch (Exception e) {
+			System.out.println(e);
 			return "redirect:blank";
 		}
-		return "files";
+		return "file";
 	}
 
-	@GetMapping("files/{filename:.+}")
+	@GetMapping("file/{filename:.+}")
 	@ResponseBody
 	public ResponseEntity<Resource> serveFile(@PathVariable String filename) throws UnsupportedEncodingException {
 
@@ -108,7 +110,7 @@ public class FileController {
 
 		if (file.isEmpty()){
 			redirectAttributes.addFlashAttribute("message", "请选择文件！");
-			return "redirect:files";
+			return "redirect:file";
 		}
 
 		storageService.store(file);
@@ -117,19 +119,25 @@ public class FileController {
 		Date date = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String sql = String.format("INSERT INTO file_info(course_id,file_name,source,size,creator,date_created) VALUES(%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\")",
-				(String) session.getAttribute("currentCourseId"), file.getOriginalFilename(), source, file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
+				session.getAttribute("currentCourseId").toString(), file.getOriginalFilename(), source, file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
 		jdbcTemplate.update(sql);
 
-		return "redirect:files";
+		log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+				"在课程 " + session.getAttribute("currentCourse").toString() + " 中上传文件：" + file.getOriginalFilename());
+
+		return "redirect:file";
 	}
 
 	@GetMapping("fileDelete")
 	public String fileDelete(@RequestParam("fileId") String fileId,
-							 @RequestParam("fileName") String fileName) throws IOException {
+							 @RequestParam("fileName") String fileName,
+							 HttpSession session) throws IOException {
+		log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+				"在课程 " + session.getAttribute("currentCourse").toString() + " 中删除文件：" + fileName);
 		storageService.delete(fileName);
 		String sql = String.format("DELETE FROM file_info WHERE id = %s", fileId);
 		jdbcTemplate.update(sql);
-		return "redirect:files";
+		return "redirect:file";
 	}
 
 	@ExceptionHandler(StorageFileNotFoundException.class)
@@ -142,7 +150,7 @@ public class FileController {
 
 		try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 
-			String sql = String.format("SELECT * FROM file_info WHERE course_id = %s and source = \"course_file\"", (String) session.getAttribute("currentCourseId"));
+			String sql = String.format("SELECT * FROM file_info WHERE course_id = %s and source = \"course_file\"", session.getAttribute("currentCourseId").toString());
 			List<Map<String, Object>> files = jdbcTemplate.queryForList(sql);
 
 			List fileUrls = storageService.loadAll().map(path -> MvcUriComponentsBuilder.fromMethodName(FileController.class,

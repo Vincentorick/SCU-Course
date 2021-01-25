@@ -1,6 +1,7 @@
 package com.scucourse.controller;
 
 import com.scucourse.storage.StorageService;
+import com.scucourse.util.Log;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -36,6 +37,7 @@ import java.util.Map;
 public class HomeworkController {
 
     private final StorageService storageService;
+    Log log = new Log();
 
     @Autowired
     public HomeworkController(StorageService storageService) {
@@ -47,10 +49,10 @@ public class HomeworkController {
 
     @GetMapping({"homework", "homework.html"})
     public String homework(Model model, HttpSession session) {
-        try {
+//        try {
             String currentUserType = (String) session.getAttribute("currentUserType");
             String currentCourse = (String) session.getAttribute("currentCourse");
-            String currentCourseId = (String) session.getAttribute("currentCourseId"); // 可能exception，未设置该属性
+            String currentCourseId = session.getAttribute("currentCourseId").toString(); // 可能exception，未设置该属性
 
             model.addAttribute("currentUser", session.getAttribute("currentUser"));
             model.addAttribute("currentUserType", currentUserType);
@@ -81,8 +83,8 @@ public class HomeworkController {
             }
             else {
                 // 学生页面
-                sql = String.format("SELECT * FROM homework_info INNER JOIN student_homework ON homework_info.id = student_homework.homework_id " +
-                        "WHERE student_id = %s", session.getAttribute("currentUserId").toString());
+                sql = String.format("SELECT * FROM homework_info, student_homework WHERE id = homework_id AND student_id = %s",
+                        session.getAttribute("currentUserId").toString());
                 List<Map<String, Object>> homeworkList_stu = jdbcTemplate.queryForList(sql);
 
                 Date date = new Date();
@@ -111,10 +113,7 @@ public class HomeworkController {
                 model.addAttribute("homeworkList_stu", homeworkList_stu);
                 model.addAttribute("memberType", "normal");
             }
-        }
-        catch (Exception e) {
-            return "redirect:blank";
-        }
+
         return "homework";
     }
 
@@ -134,7 +133,7 @@ public class HomeworkController {
         }
 
         String currentUser = (String) session.getAttribute("currentUser");
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
 
         String sql = String.format("SELECT num_students FROM course_info WHERE id = %s", currentCourseId);
         int num_total = (int)jdbcTemplate.queryForObject(sql, Integer.class);
@@ -153,13 +152,21 @@ public class HomeworkController {
                     (int)student.get("student_id"), currentHomeworkId);
             jdbcTemplate.update(sql);
         }
+
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中发布作业：" + title);
         return "redirect:homework";
     }
 
     @GetMapping("homeworkDelete")
-    public String homeworkDelete(@RequestParam("homeworkId") String homeworkId) throws IOException {
+    public String homeworkDelete(@RequestParam("homeworkId") String homeworkId,
+                                 HttpSession session) throws IOException {
+        String sql = String.format("SELECT title FROM homework_info WHERE id = %s", homeworkId);
+        String title = jdbcTemplate.queryForObject(sql, String.class);
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中删除作业：" + title);
 
-        String sql = String.format("SELECT file_id FROM student_homework WHERE homework_id = %s", homeworkId);
+        sql = String.format("SELECT file_id FROM student_homework WHERE homework_id = %s", homeworkId);
         List<Map<String, Object>> fileIds = jdbcTemplate.queryForList(sql);
 
         for (Map<String, Object> fileId : fileIds) {
@@ -182,8 +189,13 @@ public class HomeworkController {
                                     @RequestParam("fileName") String fileName,
                                     @RequestParam("fileId") String fileId,
                                     HttpSession session) throws IOException {
+        String sql = String.format("SELECT title FROM homework_info WHERE id = %s", homeworkId);
+        String title = jdbcTemplate.queryForObject(sql, String.class);
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中删除已提交的作业文件：" + fileName);
+
         storageService.delete(fileName);
-        String sql = String.format("DELETE FROM file_info WHERE id = %s", fileId);
+        sql = String.format("DELETE FROM file_info WHERE id = %s", fileId);
         jdbcTemplate.update(sql);
 
         sql = String.format("UPDATE student_homework SET submitted = 0, time = 0, file_id = 0 WHERE student_id = %s and homework_id = %s",
@@ -211,10 +223,10 @@ public class HomeworkController {
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String sql = String.format("INSERT INTO file_info(course_id,file_name,source,size,creator,date_created) VALUES(%s,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\")",
-                (String) session.getAttribute("currentCourseId"), file.getOriginalFilename(), "student_homework", file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
+                session.getAttribute("currentCourseId").toString(), file.getOriginalFilename(), "student_homework", file.getSize(), session.getAttribute("currentUser"), sdf.format(date));
         jdbcTemplate.update(sql);
 
-        sql = String.format("SELECT MAX(id) FROM file_info WHERE course_id = %s", (String) session.getAttribute("currentCourseId"));
+        sql = String.format("SELECT MAX(id) FROM file_info WHERE course_id = %s", session.getAttribute("currentCourseId").toString());
         int fileId = (int)jdbcTemplate.queryForObject(sql, Integer.class);
 
         sql = String.format("UPDATE student_homework SET submitted = 1, time = \"%s\", file_id = %d WHERE student_id = %s and homework_id = %s",
@@ -223,6 +235,11 @@ public class HomeworkController {
 
         sql = String.format("UPDATE homework_info SET num_submitted = num_submitted + 1 WHERE id = %s", homeworkId);
         jdbcTemplate.update(sql);
+
+        sql = String.format("SELECT title FROM homework_info WHERE id = %s", homeworkId);
+        String title = jdbcTemplate.queryForObject(sql, String.class);
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中提交作业：" + title);
 
         return "redirect:homework";
     }
@@ -237,7 +254,15 @@ public class HomeworkController {
         model.addAttribute("currentUserType", currentUserType);
         model.addAttribute("currentCourse", currentCourse);
 
-        String sql = String.format("SELECT * FROM homework_info WHERE id = %s", homeworkId);
+        String sql = String.format("SELECT creator FROM course_info WHERE id = %s", session.getAttribute("currentCourseId").toString());
+        String creator = jdbcTemplate.queryForObject(sql, String.class);
+
+        if (currentUserType.equals("admin") || creator.equals(session.getAttribute("currentUser")))
+            model.addAttribute("memberType", "admin");
+        else
+            model.addAttribute("memberType", "normal");
+
+        sql = String.format("SELECT * FROM homework_info WHERE id = %s", homeworkId);
         Map<String, Object> homeworkDetail = jdbcTemplate.queryForMap(sql);
         model.addAttribute("homeworkDetail", homeworkDetail);
 
@@ -268,7 +293,7 @@ public class HomeworkController {
 
     @GetMapping("homeworkExport")
     public ResponseEntity<Resource> homeworkExport(HttpSession session) {
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 

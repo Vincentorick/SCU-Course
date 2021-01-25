@@ -1,6 +1,7 @@
 package com.scucourse.controller;
 
 import com.scucourse.storage.StorageService;
+import com.scucourse.util.Log;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -34,6 +35,7 @@ import java.util.Map;
 public class CourseController {
 
     private final StorageService storageService;
+    Log log = new Log();
 
     @Autowired
     public CourseController(StorageService storageService) {
@@ -47,9 +49,10 @@ public class CourseController {
     public String course(Model model, HttpSession session) {
         try {
             String currentCourse = (String) session.getAttribute("currentCourse");
-            String currentCourseId = (String) session.getAttribute("currentCourseId"); // 可能exception，未设置该属性
+            String currentCourseId = session.getAttribute("currentCourseId").toString(); // 可能exception，未设置该属性
 
             model.addAttribute("currentUser", session.getAttribute("currentUser"));
+            model.addAttribute("currentUserType", session.getAttribute("currentUserType"));
             model.addAttribute("currentCourse", currentCourse);
 
             String sql = String.format("SELECT * FROM course_info WHERE id = %s", currentCourseId);
@@ -73,6 +76,7 @@ public class CourseController {
                 model.addAttribute("memberType", "normal");
         }
         catch (Exception e) {
+            System.out.println(e);
             return "redirect:blank";
         }
         return "course";
@@ -94,14 +98,14 @@ public class CourseController {
             case "create":
                 if (courseName.equals("")) {
                     redirectAttributes.addFlashAttribute("message", "请输入课程名");
-                    return "redirect:index";
+                    return "redirect:course-center";
                 }
 
                 sql = String.format("SELECT * FROM course_info WHERE course_name = \"%s\"", courseName);
                 try {
                     if (!jdbcTemplate.queryForMap(sql).isEmpty()) {
                         redirectAttributes.addFlashAttribute("message", "课程名已被占用");
-                        return "redirect:index";
+                        return "redirect:course-center";
                     }
                 } catch (Exception ignored) {}
 
@@ -112,7 +116,7 @@ public class CourseController {
                         courseName, currentUser, sdf.format(date));
                 jdbcTemplate.update(sql);
 
-                sql = "SELECT MAX(id) FROM course_info";
+                sql = String.format("SELECT id FROM course_info WHERE course_name = \"%s\"", courseName);
                 courseId = jdbcTemplate.queryForObject(sql, Integer.class);
                 sql = String.format("INSERT INTO student_course(student_id,course_id,is_creator) VALUES(%s,%d,1)", currentUserId, courseId);
                 jdbcTemplate.update(sql);
@@ -120,7 +124,14 @@ public class CourseController {
                 sql = String.format("UPDATE user_info SET course_created = course_created + 1 WHERE username = \"%s\"", currentUser);
                 jdbcTemplate.update(sql);
 
-                return "redirect:index";
+                session.setAttribute("currentCourse", courseName);
+                session.setAttribute("currentCourseId", courseId);
+
+                redirectAttributes.addFlashAttribute("message", "创建成功");
+                log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                        "创建课程：" + courseName);
+
+                return "redirect:course-center";
 
             case "join":
                 sql = String.format("SELECT id FROM course_info WHERE course_name = \"%s\"", courseName);
@@ -135,21 +146,45 @@ public class CourseController {
                 sql = String.format("UPDATE course_info SET num_students = num_students + 1 WHERE course_name = \"%s\"", courseName);
                 jdbcTemplate.update(sql);
 
-                return "redirect:index";
+                try {
+                    sql = String.format("SELECT * FROM attendance_info WHERE course_id = %s", courseId);
+                    List<Map<String, Object>> attendances = jdbcTemplate.queryForList(sql);
+
+                    for (Map<String, Object> attendance : attendances) {
+                        sql = String.format("INSERT INTO student_attendance(student_id,attendance_id) VALUES(%s, %s)",
+                                currentUserId, attendance.get("id").toString());
+                        jdbcTemplate.update(sql);
+                    }
+
+                    sql = String.format("SELECT * FROM homework_info WHERE course_id = %s", courseId);
+                    List<Map<String, Object>> homeworks = jdbcTemplate.queryForList(sql);
+
+                    for (Map<String, Object> homework : homeworks) {
+                        sql = String.format("INSERT INTO student_homework(student_id,homework_id) VALUES(%s, %s)",
+                                currentUserId, homework.get("id").toString());
+                        jdbcTemplate.update(sql);
+                    }
+                } catch (Exception ignored) {}
+
+                session.setAttribute("currentCourse", courseName);
+                session.setAttribute("currentCourseId", courseIdToEnter);
+
+                log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                        "加入课程：" + courseName);
+
+                return "redirect:course-center";
 
             case "searchJoin":
                 if (courseName.equals("")) {
                     redirectAttributes.addFlashAttribute("message", "请输入课程名");
-                    return "redirect:index";
+                    return "redirect:course-center";
                 }
                 try {
                     sql = String.format("SELECT * FROM course_info WHERE course_name = \"%s\"", courseName);
-                    if (!jdbcTemplate.queryForMap(sql).isEmpty()) {
-                        redirectAttributes.addFlashAttribute("message", "加入成功");
-                    }
+                    jdbcTemplate.queryForMap(sql);
                 } catch (DataAccessException e) {
                     redirectAttributes.addFlashAttribute("message", "课程不存在");
-                    return "redirect:index";
+                    return "redirect:course-center";
                 }
 
                 try {
@@ -164,11 +199,38 @@ public class CourseController {
 
                     sql = String.format("UPDATE course_info SET num_students = num_students + 1 WHERE course_name = \"%s\"", courseName);
                     jdbcTemplate.update(sql);
+
+                    try {
+                        sql = String.format("SELECT * FROM attendance_info WHERE course_id = %s", courseId);
+                        List<Map<String, Object>> attendances = jdbcTemplate.queryForList(sql);
+
+                        for (Map<String, Object> attendance : attendances) {
+                            sql = String.format("INSERT INTO student_attendance(student_id,attendance_id) VALUES(%s, %s)",
+                                    currentUserId, attendance.get("id").toString());
+                            jdbcTemplate.update(sql);
+                        }
+
+                        sql = String.format("SELECT * FROM homework_info WHERE course_id = %s", courseId);
+                        List<Map<String, Object>> homeworks = jdbcTemplate.queryForList(sql);
+
+                        for (Map<String, Object> homework : homeworks) {
+                            sql = String.format("INSERT INTO student_homework(student_id,homework_id) VALUES(%s, %s)",
+                                    currentUserId, homework.get("id").toString());
+                            jdbcTemplate.update(sql);
+                        }
+                    } catch (Exception ignored) {}
+
+                    session.setAttribute("currentCourse", courseName);
+                    session.setAttribute("currentCourseId", courseId);
+
+                    redirectAttributes.addFlashAttribute("message", "加入成功");
+                    log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                            "加入课程：" + courseName);
                 } catch (Exception e) {
                     redirectAttributes.addFlashAttribute("message", "您已加入该课程");
                 }
 
-                return "redirect:index";
+                return "redirect:course-center";
 
             case "enter":
                 session.setAttribute("currentCourse", courseName);
@@ -176,7 +238,7 @@ public class CourseController {
                 return "redirect:course";
 
             default:
-                return "redirect:index";
+                return "redirect:course-center";
         }
     }
 
@@ -188,7 +250,7 @@ public class CourseController {
                                HttpSession session,
                                RedirectAttributes redirectAttributes) throws IOException {
         String currentUserId = session.getAttribute("currentUserId").toString();
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
         String sql;
 
         switch (action) {
@@ -210,13 +272,13 @@ public class CourseController {
                 } catch (Exception ignored) {}
                 sql = String.format("UPDATE course_info SET course_name = \"%s\", max_num_students = %s WHERE id = %s", courseName, maxNumStu, currentCourseId);
                 jdbcTemplate.update(sql);
-                session.setAttribute("currentCourse",courseName);
+                session.setAttribute("currentCourse", courseName);
+
+                log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                        "修改课程信息：" + courseName);
                 return "redirect:course";
 
             case "delete":
-                session.removeAttribute("currentCourse");
-                session.removeAttribute("currentCourseId");
-
                 sql = String.format("UPDATE user_info SET course_created = course_created - 1 WHERE id = %s", currentUserId);
                 jdbcTemplate.update(sql);
 
@@ -237,6 +299,12 @@ public class CourseController {
 
                 sql = String.format("DELETE FROM course_info WHERE id = %s", currentCourseId);
                 jdbcTemplate.update(sql);
+
+                log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                        "删除课程：" + courseName);
+
+                session.removeAttribute("currentCourse");
+                session.removeAttribute("currentCourseId");
                 return "redirect:index";
 
             case "quit":
@@ -248,6 +316,11 @@ public class CourseController {
                 // update value num_students in course_info
                 sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %s", currentCourseId);
                 jdbcTemplate.update(sql);
+
+                log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                        "退出课程：" + courseName);
+                session.removeAttribute("currentCourse");
+                session.removeAttribute("currentCourseId");
                 return "redirect:index";
 
             default:
@@ -258,7 +331,7 @@ public class CourseController {
     @GetMapping("removeStudent")
     public String removeStudent(@RequestParam("studentName") String studentName,
                                 HttpSession session) {
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
         String sql = String.format("SELECT id FROM user_info WHERE username = \"%s\"", studentName);
         int studentId = (int)jdbcTemplate.queryForObject(sql, Integer.class);
 
@@ -271,6 +344,8 @@ public class CourseController {
         sql = String.format("UPDATE course_info SET num_students = num_students - 1 WHERE id = %s", currentCourseId);
         jdbcTemplate.update(sql);
 
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "从课程 " + session.getAttribute("currentUserId").toString() + " 中移除学生：" + studentName);
         return "redirect:course";
     }
 
@@ -279,7 +354,7 @@ public class CourseController {
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 
-            String sql = String.format("SELECT student_id,grade FROM student_course WHERE course_id = %s AND is_creator = 0", (String) session.getAttribute("currentCourseId"));
+            String sql = String.format("SELECT student_id,grade FROM student_course WHERE course_id = %s AND is_creator = 0", session.getAttribute("currentCourseId").toString());
             List<Map<String, Object>> students = jdbcTemplate.queryForList(sql);
 
             for (Map<String, Object> student : students) {

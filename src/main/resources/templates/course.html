@@ -7,10 +7,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="author" content="Vincent">
 
     <title th:text="|${currentCourse} - 课程主页|"></title>
-    <link rel="icon" type="image/x-icon" href="/images/icon.ico">
+    <link rel="icon" type="image/x-icon" href="/images/logo.ico">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -36,8 +36,8 @@
 
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" th:href="@{index.html}">
-                <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
+                <div class="sidebar-brand-icon">
+                    <img src="/images/logo.jpg" height="30" width="48">
                 </div>
                 <div class="sidebar-brand-text mx-3">SCU Course</div>
             </a>
@@ -50,6 +50,16 @@
                 <a class="nav-link" href="index.html">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>主页</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="course-center.html">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>课程中心</span></a>
+            </li>
+            <li th:if="${currentUserType} eq 'admin'" class="nav-item">
+                <a class="nav-link" href="log-system.html">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>系统日志</span></a>
             </li>
 
             <!-- Divider -->
@@ -82,10 +92,23 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="files.html">
+                <a class="nav-link" href="file.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>文件</span>
                 </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages"
+                   aria-expanded="true" aria-controls="collapsePages">
+                    <i class="fas fa-fw fa-folder"></i>
+                    <span>日志</span>
+                </a>
+                <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="log-user.html">用户日志</a>
+                        <a th:if="${memberType} eq 'admin'" class="collapse-item" href="log-course.html">课程日志</a>
+                    </div>
+                </div>
             </li>
 
             <!-- Divider -->

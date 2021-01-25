@@ -1,5 +1,6 @@
 package com.scucourse.controller;
 
+import com.scucourse.util.Log;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -33,6 +34,8 @@ import java.util.Map;
 @Controller
 public class AttendanceController {
 
+    Log log = new Log();
+
     @Autowired
     JdbcTemplate jdbcTemplate;
 
@@ -41,7 +44,7 @@ public class AttendanceController {
         try {
             String currentUserType = (String) session.getAttribute("currentUserType");
             String currentCourse = (String) session.getAttribute("currentCourse");
-            String currentCourseId = (String) session.getAttribute("currentCourseId"); // 可能exception，未设置该属性
+            String currentCourseId = session.getAttribute("currentCourseId").toString(); // 可能exception，未设置该属性
 
             model.addAttribute("currentUser", session.getAttribute("currentUser"));
             model.addAttribute("currentUserType", currentUserType);
@@ -101,6 +104,7 @@ public class AttendanceController {
             }
         }
         catch (Exception e) {
+            System.out.println(e);
             return "redirect:blank";
         }
         return "attendance";
@@ -120,9 +124,13 @@ public class AttendanceController {
             redirectAttributes.addFlashAttribute("message", "请选择时间");
             return "redirect:attendance";
         }
+        if (startTime.compareTo(endTime) > 0) {
+            redirectAttributes.addFlashAttribute("message", "结束时间不可早于开始时间");
+            return "redirect:attendance";
+        }
 
         String currentUser = (String) session.getAttribute("currentUser");
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
 
         String sql = String.format("SELECT num_students FROM course_info WHERE id = %s", currentCourseId);
         int num_total = (int)jdbcTemplate.queryForObject(sql, Integer.class);
@@ -141,13 +149,21 @@ public class AttendanceController {
                     (int)student.get("student_id"), currentAttendanceId);
             jdbcTemplate.update(sql);
         }
+
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中发布签到：" + title);
         return "redirect:attendance";
     }
 
     @GetMapping("attendanceDelete")
     public String attendanceDelete(@RequestParam("attendanceId") String attendanceId,
                                    HttpSession session) {
-        String sql = String.format("DELETE FROM attendance_info WHERE id = %s", attendanceId);
+        String sql = String.format("SELECT title FROM attendance_info WHERE id = %s", attendanceId);
+        String title = jdbcTemplate.queryForObject(sql, String.class);
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中删除签到：" + title);
+
+        sql = String.format("DELETE FROM attendance_info WHERE id = %s", attendanceId);
         jdbcTemplate.update(sql);
 
         sql = String.format("DELETE FROM student_attendance WHERE attendance_id = %s", attendanceId);
@@ -168,6 +184,10 @@ public class AttendanceController {
         sql = String.format("UPDATE attendance_info SET num_attended = num_attended + 1 WHERE id = %s", attendanceId);
         jdbcTemplate.update(sql);
 
+        sql = String.format("SELECT title FROM attendance_info WHERE id = %s", attendanceId);
+        String title = jdbcTemplate.queryForObject(sql, String.class);
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "在课程 " + session.getAttribute("currentCourse").toString() + " 中完成签到：" + title);
         return "redirect:attendance";
     }
 
@@ -181,7 +201,15 @@ public class AttendanceController {
         model.addAttribute("currentUserType", currentUserType);
         model.addAttribute("currentCourse", currentCourse);
 
-        String sql = String.format("SELECT * FROM attendance_info WHERE id = %s", attendanceId);
+        String sql = String.format("SELECT creator FROM course_info WHERE id = %s", session.getAttribute("currentCourseId").toString());
+        String creator = jdbcTemplate.queryForObject(sql, String.class);
+
+        if (currentUserType.equals("admin") || creator.equals(session.getAttribute("currentUser")))
+            model.addAttribute("memberType", "admin");
+        else
+            model.addAttribute("memberType", "normal");
+
+        sql = String.format("SELECT * FROM attendance_info WHERE id = %s", attendanceId);
         Map<String, Object> attendanceDetail = jdbcTemplate.queryForMap(sql);
         model.addAttribute("attendanceDetail", attendanceDetail);
 
@@ -205,7 +233,7 @@ public class AttendanceController {
 
     @GetMapping("attendanceExport")
     public ResponseEntity<Resource> attendanceExport(HttpSession session) {
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 

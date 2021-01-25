@@ -7,10 +7,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="author" content="Vincent">
 
     <title>SCU Course - 主页</title>
-    <link rel="icon" type="image/x-icon" href="/images/icon.ico">
+    <link rel="icon" type="image/x-icon" href="/images/logo.ico">
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -35,8 +35,8 @@
 
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
-                <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
+                <div class="sidebar-brand-icon">
+                    <img src="/images/logo.jpg" height="30" width="48">
                 </div>
                 <div class="sidebar-brand-text mx-3">SCU Course</div>
             </a>
@@ -50,45 +50,65 @@
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>主页</span></a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="course-center.html">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>课程中心</span></a>
+            </li>
+            <li th:if="${currentUserType} eq 'admin'" class="nav-item">
+                <a class="nav-link" href="log-system.html">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>系统日志</span></a>
+            </li>
 
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
 
             <div class="sidebar-heading" th:text="${currentCourse}"></div>
 
-            <li class="nav-item">
+            <li th:if="${currentCourse}" class="nav-item">
                 <a class="nav-link" href="course.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>课程主页</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li th:if="${currentCourse}" class="nav-item">
                 <a class="nav-link" href="bulletin.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>公告</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li th:if="${currentCourse}" class="nav-item">
                 <a class="nav-link" href="attendance.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>签到</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li th:if="${currentCourse}" class="nav-item">
                 <a class="nav-link" href="homework.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>作业</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="files.html">
+            <li th:if="${currentCourse}" class="nav-item">
+                <a class="nav-link" href="file.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>文件</span>
                 </a>
             </li>
-
-            <!-- Divider -->
-            <hr class="sidebar-divider d-none d-md-block">
+            <li th:if="${currentCourse}" class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages"
+                   aria-expanded="true" aria-controls="collapsePages">
+                    <i class="fas fa-fw fa-folder"></i>
+                    <span>日志</span>
+                </a>
+                <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="log-user.html">用户日志</a>
+                        <a th:if="${memberType} eq 'admin'" class="collapse-item" href="log-course.html">课程日志</a>
+                    </div>
+                </div>
+            </li>
 
             <!-- Sidebar Toggler (Sidebar) -->
             <div class="text-center d-none d-md-inline">
@@ -222,25 +242,10 @@
                     </div>
                     <!-- End of Quick Access -->
 
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">创建 / 加入课程</h6>
-                        </div>
-                        <div class="card-body">
-                            <form action="courseAction">
-                                <input name="courseName" type="text" class="bg-light border-primary mr-2" placeholder="课程名称">
-                                <button th:if="${currentUserType} eq 'admin' or ${currentUserType} eq 'teacher'"
-                                        type="submit" name="action" value="create" class="btn btn-primary mr-2">创建</button>
-                                <button type="submit" name="action" value="searchJoin" class="btn btn-success mr-2">加入</button>
-                                <span class="h6" th:text="${message}"></span>
-                            </form>
-                        </div>
-                    </div>
-
                     <!-- 课程列表 -->
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">课程列表</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">我的课程</h6>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -276,10 +281,7 @@
                                             <form action="/courseAction">
                                                 <input hidden name="courseName" type="text" th:value="${course.course_name}">
                                                 <input hidden name="courseIdToEnter" type="text" th:value="${course.id}">
-                                                <div th:switch="${course.joined}">
-                                                    <button th:case="'1'" type="submit" class="btn btn-sm btn-primary" name="action" value="enter">进入课程</button>
-                                                    <button th:case="'0'" type="submit" class="btn btn-sm btn-success" name="action" value="join">加入课程</button>
-                                                </div>
+                                                <button type="submit" class="btn btn-sm btn-primary" name="action" value="enter">进入课程</button>
                                             </form>
                                         </td>
                                     </tr>

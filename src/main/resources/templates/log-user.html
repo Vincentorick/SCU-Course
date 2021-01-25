@@ -9,16 +9,15 @@
     <meta name="description" content="">
     <meta name="author" content="Vincent">
 
-    <title th:text="|${currentCourse} - 作业|"></title>
+    <title th:text="|${currentCourse} - 用户日志|"></title>
     <link rel="icon" type="image/x-icon" href="/images/logo.ico">
 
-    <!-- Custom fonts for this template-->
+    <!-- Custom fonts for this template -->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link
-            href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-            rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+          rel="stylesheet">
 
-    <!-- Custom styles for this template-->
+    <!-- Custom styles for this template -->
     <link href="css/sb-admin-2.css" rel="stylesheet">
 
     <!-- Custom styles for this page -->
@@ -85,7 +84,7 @@
                     <span>签到</span>
                 </a>
             </li>
-            <li class="nav-item active">
+            <li class="nav-item">
                 <a class="nav-link" href="homework.html">
                     <i class="fas fa-fw fa-table"></i>
                     <span>作业</span>
@@ -132,23 +131,25 @@
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
 
                     <!-- Sidebar Toggle (Topbar) -->
-                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-                        <i class="fa fa-bars"></i>
-                    </button>
+                    <form class="form-inline">
+                        <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                    </form>
 
+                    <!-- 显示当前课程名 -->
                     <span class="h4 text-xl-left font-weight-bold text-gray-800" th:text="${currentCourse}"></span>
 
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
-
                         <div class="topbar-divider d-none d-sm-block"></div>
-
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600" th:text="${currentUser}"></span>
-                                <img class="img-profile rounded-circle" src="images/undraw_profile.svg">
+                                <img class="img-profile rounded-circle"
+                                     th:src="@{images/undraw_profile.svg}">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
@@ -168,47 +169,26 @@
                                 </a>
                             </div>
                         </li>
+
                     </ul>
+
                 </nav>
                 <!-- End of Topbar -->
 
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
 
-                    <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">作业</h1>
+                        <h1 class="h3 mb-0 text-gray-800">用户日志</h1>
                     </div>
 
-                    <form th:if="${memberType} eq 'admin'" action="homeworkCreate">
-                        <div class="card shadow mb-4">
-                            <div class="card-header">
-                                <nav class="navbar">
-                                    <span class="navbar-brand font-weight-bold text-primary">发布作业</span>
-                                    <ul class="navbar-nav ml-auto">
-                                        <li class="nav-item">
-                                            <span class="h6 mr-2" th:text="${message}"></span>
-                                            <button class="btn btn-primary">确定</button>
-                                        </li>
-                                    </ul>
-                                </nav>
-                            </div>
-                            <div class="card-body">
-                                <input name="title" type="text" class="mr-4" placeholder="标题">
-                                <span class="mr-2">截止时间</span>
-                                <input name="deadline" type="datetime-local" class="mr-4 mb-3">
-                                <textarea name="description" rows="6" class="form-control border-dark" placeholder="描述"></textarea>
-                            </div>
-                        </div>
-                    </form>
-
-                    <div th:if="${memberType} eq 'admin'" class="card shadow mb-4">
+                    <div class="card shadow mb-4">
                         <div class="card-header py-3">
                             <nav class="navbar">
-                                <span class="navbar-brand font-weight-bold text-primary">作业记录</span>
+                                <span class="navbar-brand font-weight-bold text-primary">详细信息</span>
                                 <ul class="navbar-nav ml-auto">
                                     <li class="nav-item">
-                                        <a href="/homeworkExport">
+                                        <a href="/userLogExport">
                                             <button class="btn btn-primary">导出表格</button>
                                         </a>
                                     </li>
@@ -220,86 +200,24 @@
                                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                                     <thead>
                                     <tr>
-                                        <th>标题</th>
-                                        <th>截止时间</th>
-                                        <th>学生人数</th>
-                                        <th>已提交人数</th>
-                                        <th>操作</th>
+                                        <th>时间</th>
+                                        <th>内容</th>
                                     </tr>
                                     </thead>
                                     <tfoot>
                                     <tr>
-                                        <th>标题</th>
-                                        <th>截止时间</th>
-                                        <th>学生人数</th>
-                                        <th>已提交人数</th>
-                                        <th>操作</th>
+                                        <th>时间</th>
+                                        <th>内容</th>
                                     </tr>
                                     </tfoot>
                                     <tbody>
-                                    <tr th:each="homework : ${homeworkList}">
-                                        <td th:text="${homework.title}"></td>
-                                        <td th:text="${homework.deadline}"></td>
-                                        <td th:text="${homework.num_total}"></td>
-                                        <td th:text="${homework.num_submitted}"></td>
-                                        <td>
-                                            <div class="row no-gutters">
-                                                <form action="homework-detail" method="post">
-                                                    <input hidden name="homeworkId" th:value="${homework.id}">
-                                                    <button type="submit" class="btn btn-sm btn-primary mr-2">查看详情</button>
-                                                </form>
-                                                <form action="homeworkDelete">
-                                                    <input hidden name="homeworkId" th:value="${homework.id}">
-                                                    <button type="submit" class="btn btn-sm btn-danger">删除</button>
-                                                </form>
-                                            </div>
-                                        </td>
+                                    <tr th:each="log : ${logs}">
+                                        <td th:text="${log.time}"></td>
+                                        <td th:text="${log.content}"></td>
                                     </tr>
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
-                    </div>
-
-                    <div th:if="${memberType} eq 'normal'" th:each="homework : ${homeworkList_stu}" class="card shadow mb-4">
-                        <div class="card-header">
-                            <span class="m-0 font-weight-bold text-primary" th:text="${homework.title}"></span>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <form action="homeworkSubmit">
-                                    <span class="ml-4 mr-4 font-weight-bold" th:text="${homework.status}"></span>
-                                    <span class="mr-2">截止时间</span>
-                                    <input readonly type="text" class="mr-4" th:value="${homework.deadline}">
-                                    <span>提交状态：</span>
-                                    <span class="mr-4 font-weight-bold" th:text="${homework.status_student}"></span>
-                                </form>
-                            </div>
-                            <div class="mb-3">
-                                <textarea readonly rows="6" class="form-control" placeholder="作业描述" th:text="${homework.description}"></textarea>
-                            </div>
-
-                            <div>
-                                <div th:if="${homework.submitted} eq '1'" class="mb-2">
-                                    <form action="homeworkDelete-stu">
-                                        <input hidden type="text" name="homeworkId" th:value="${homework.id}">
-                                        <input hidden type="text" name="fileName" th:value="${homework.fileName}">
-                                        <input hidden type="text" name="fileId" th:value="${homework.fileId}">
-
-                                        <span>已提交：</span>
-                                        <a th:href="${homework.fileUrl}" th:text="${homework.fileName}" class="mr-2"></a>
-                                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
-                                    </form>
-                                </div>
-
-                                <form th:if="${homework.status} eq '未截止' and ${homework.submitted} eq '0'" method="POST" enctype="multipart/form-data" th:action="@{homeworkSubmit}">
-                                    <input hidden type="text" name="homeworkId" th:value="${homework.id}">
-                                    <input type="file" name="file"/>
-                                    <button type="submit" class="btn btn-sm btn-primary mr-2">提交</button>
-                                    <span th:if="${message}" th:text="${message}" class="h6"></span>
-                                </form>
-                            </div>
-
                         </div>
                     </div>
 

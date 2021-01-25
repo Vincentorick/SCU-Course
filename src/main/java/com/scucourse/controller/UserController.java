@@ -1,5 +1,6 @@
 package com.scucourse.controller;
 
+import com.scucourse.util.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -21,6 +22,11 @@ import java.util.Random;
 public class UserController {
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    @GetMapping("/")
+    public String root() {
+        return "redirect:index";
+    }
 
     @GetMapping({"login","login.html"})
     public String login(HttpSession session) {

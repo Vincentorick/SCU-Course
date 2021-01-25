@@ -1,5 +1,6 @@
 package com.scucourse.controller;
 
+import com.scucourse.util.Log;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -31,15 +32,18 @@ public class BulletinController {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    Log log = new Log();
+
     @GetMapping({"bulletin", "bulletin.html"})
     public String bulletin(Model model, HttpSession session) {
         try {
             String currentCourse = (String) session.getAttribute("currentCourse");
-            String currentCourseId = (String) session.getAttribute("currentCourseId");
+            String currentCourseId = session.getAttribute("currentCourseId").toString();
             String currentUserType = (String) session.getAttribute("currentUserType");
 
+            model.addAttribute("currentUser", session.getAttribute("currentUser"));
+            model.addAttribute("currentUserType", session.getAttribute("currentUserType"));
             model.addAttribute("currentCourse", currentCourse);
-            model.addAttribute("currentUser", (String) session.getAttribute("currentUser"));
 
             String sql = String.format("SELECT * FROM bulletin_info WHERE course_id = %s", currentCourseId);
             List<Map<String, Object>> bulletins = jdbcTemplate.queryForList(sql);
@@ -58,6 +62,7 @@ public class BulletinController {
                 model.addAttribute("memberType", "normal");
         }
         catch (Exception e) {
+            System.out.println(e);
             return "redirect:blank";
         }
         return "bulletin";
@@ -74,7 +79,7 @@ public class BulletinController {
         }
 
         String currentUser = (String) session.getAttribute("currentUser");
-        String currentCourseId = (String) session.getAttribute("currentCourseId");
+        String currentCourseId = session.getAttribute("currentCourseId").toString();
 
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -82,14 +87,23 @@ public class BulletinController {
                 currentCourseId, title, currentUser, sdf.format(date), content);
         jdbcTemplate.update(sql);
 
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "发布公告：" + title);
+
         return "redirect:bulletin";
     }
 
     @GetMapping("bulletinDelete")
     public String bulletinDelete(@RequestParam("bulletinId") String bulletinId,
                                  HttpSession session) {
-        String sql = String.format("DELETE FROM bulletin_info WHERE id = %s", bulletinId);
+        String sql = String.format("SELECT title FROM bulletin_info WHERE id = %s", bulletinId);
+        String title = jdbcTemplate.queryForObject(sql, String.class);
+        log.logAction(session.getAttribute("currentUserId").toString(), session.getAttribute("currentCourseId").toString(),
+                "删除公告：" + title);
+
+        sql = String.format("DELETE FROM bulletin_info WHERE id = %s", bulletinId);
         jdbcTemplate.update(sql);
+
         return "redirect:bulletin";
     }
 
@@ -98,7 +112,7 @@ public class BulletinController {
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream();) {
 
-            String sql = String.format("SELECT * FROM bulletin_info WHERE course_id = %s", (String) session.getAttribute("currentCourseId"));
+            String sql = String.format("SELECT * FROM bulletin_info WHERE course_id = %s", session.getAttribute("currentCourseId").toString());
             List<Map<String, Object>> bulletins = jdbcTemplate.queryForList(sql);
             Collections.reverse(bulletins);
 
